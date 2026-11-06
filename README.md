@@ -126,6 +126,14 @@ Si recibes este mensaje al ejecutar la compilación en tu máquina local:
    ./gradlew :app:assembleDebug
    ```
 
+### Error: `Keystore file '.../debug.keystore' not found for signing config 'debugConfig'`
+El archivo `debug.keystore` se almacena codificado en base64 en `debug.keystore.base64` para proteger las firmas.
+Para generarlo o restaurarlo en tu terminal de Ubuntu, ejecuta un único comando:
+```bash
+base64 -d debug.keystore.base64 > debug.keystore
+```
+*(Nota: `app/build.gradle.kts` también ha sido configurado para autorecuperarlo de forma transparente durante el build si no existe).*
+
 ### 5. Ejecutar las Pruebas Locales (Unit / Robolectric)
 Para verificar la integridad de la base de datos Room, los repositorios y las vistas:
 ```bash

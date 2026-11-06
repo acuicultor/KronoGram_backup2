@@ -1,4 +1,5 @@
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+import java.util.Base64
 
 plugins {
   alias(libs.plugins.android.application)
@@ -23,6 +24,15 @@ android {
     buildConfigField("String", "TELEGRAM_API_HASH", "\"51b61cb9574c106fd63b3f3c0f1e74fd\"")
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+  }
+
+  // Auto-restore debug.keystore from debug.keystore.base64 if missing on local development machines
+  val debugKeystoreFile = rootProject.file("debug.keystore")
+  if (!debugKeystoreFile.exists()) {
+    val base64KeystoreFile = rootProject.file("debug.keystore.base64")
+    if (base64KeystoreFile.exists()) {
+      debugKeystoreFile.writeBytes(Base64.getDecoder().decode(base64KeystoreFile.readText().trim()))
+    }
   }
 
   // Do not remove or modify these signingConfigs. They are necessary for building, installing,
