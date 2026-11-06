@@ -1,6 +1,6 @@
-# KronoGram — Plan de Optimización Ultra-Agresiva con ProGuard / R8
+# KronoGram — Plan de Corrección Integral, Imagen Oficial y Ajustes Nativos
 
-Este plan define la configuración de optimización, reducción de código (*shrinking*), ofuscación y reducción de recursos (*resource shrinking*) de **KronoGram** tanto para compilaciones **Debug** como **Release**, alcanzando el mínimo tamaño de APK y máxima velocidad de ejecución.
+Este plan detalla la reestructuración completa de la experiencia de usuario, diseño visual, flujo de autenticación y configuración nativa de **KronoGram** para solucionar todos los problemas reportados y cumplir con las decisiones confirmadas.
 
 ---
 
@@ -8,77 +8,104 @@ Este plan define la configuración de optimización, reducción de código (*shr
 
 > [!IMPORTANT]
 > Decisiones confirmadas por el usuario:
-> - **Entornos de Compilación**: Habilitar optimización R8/ProGuard en **ambos modos: Debug y Release** para validar las reglas y el rendimiento directamente en desarrollo.
-> - **Nivel de Agresividad**: **Ultra agresiva**, incluyendo 5 pasadas de optimización de bytecode (`-optimizationpasses 5`), modificación de accesos de clases/métodos, fusión de interfaces (`-mergeinterfacesaggressively`) y eliminación completa de llamadas a `android.util.Log`.
-> - **Preservación Segura**: Mantener intactas las entidades de Room, DAOs, base de datos SQLite, Compose runtime, Coroutines y campos de `BuildConfig` para evitar fallos de tiempo de ejecución.
+> 1. **Imagen de Marca Oficial**: Utilizar de manera exclusiva e idéntica la imagen enviada por el usuario (`IMG_6f2da96a-2535-427b-8892-12106e2c4884_3e53caf1.jpg` con el avión de Telegram y el anillo chrono de doble flecha neón) como icono de la aplicación en todas las densidades de pantalla y como logotipo principal en la interfaz.
+> 2. **Ajustes Nativos de Telegram**: Implementar **pantallas completas dedicadas** para cada categoría nativa de Telegram (Notificaciones, Privacidad, Almacenamiento, Ajustes de Chat, Dispositivos e Idioma).
+> 3. **Sistema de Temas de 3 Vías**: Selector directo e interactivo entre **Día (Telegram Clásico #527DA3 / #EFFDDE)**, **Noche (Obsidiana Cyber)** y **AMOLED Puro (#000000)**.
+> 4. **Flujo de Autenticación Real**: Proceso de login interactivo en 2 pasos: primero número de teléfono con selector de prefijo internacional, seguido por la pantalla de ingreso del código de 5 dígitos (con temporizador de reenvío) y soporte para contraseña 2FA.
+> 5. **Solución a Textos Cortados y Layout**: Rediseño de botones de bienvenida, eliminación del cuadro de API ID vertical invasivo en la cabecera, scroll completo en el menú lateral y padding inferior en la lista de chats para evitar solapamientos con el botón flotante (FAB).
 
 ---
 
-### 1. Cambios en la Configuración de Gradle (`app/build.gradle.kts`)
-
-1. **Habilitación de Minificación y Reducción de Recursos:**
-   - En `release`:
-     - `isMinifyEnabled = true`
-     - `isShrinkResources = true`
-     - `proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")`
-   - En `debug`:
-     - `isMinifyEnabled = true`
-     - `isShrinkResources = true`
-     - `proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")`
-2. **Conservación de Signing Configs:**
-   - No alterar `signingConfig` existente en `release` ni en `debugConfig`.
-
----
-
-### 2. Reglas Específicas de ProGuard / R8 (`app/proguard-rules.pro`)
+### 1. Sustitución de Imagen de Marca e Iconos
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                 Estructura de Reglas R8                     │
-│                                                             │
-│  [Reglas Generales de Optimización]                         │
-│  ├── -optimizationpasses 5                                 │
-│  ├── -allowaccessmodification                              │
-│  ├── -mergeinterfacesaggressively                          │
-│  └── -repackageclasses ''                                   │
-│                                                             │
-│  [Eliminación de Bytecode / Overhead]                       │
-│  └── -assumenosideeffects android.util.Log { *; }          │
-│                                                             │
-│  [Preservación de Componentes Críticos]                     │
-│  ├── Room Entities & DAOs (com.example.data.**)             │
-│  ├── Jetpack Compose Runtime & State                        │
-│  ├── Kotlin Coroutines & Flow (kotlinx.coroutines.**)       │
-│  ├── Telegram API Credentials (com.example.BuildConfig)     │
-│  └── Modelos y Clases de UI                                 │
+│                 Activo Oficial de Marca                     │
+│  /public/assets/aistudio/IMG_6f2da96a-2535-427b-...jpg      │
+│                              │                              │
+│         ┌────────────────────┴────────────────────┐         │
+│         ▼                                         ▼         │
+│  [Recurso de Dibujable]                   [Mipmaps Android] │
+│  app/.../kronogram_brand_logo.jpg         ic_launcher.png   │
+│  (Auth, Onboarding, Drawer, About)        ic_launcher_round │
+│                                           (mdpi a xxxhdpi)  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-#### Detalle de Reglas Clave:
-1. **Reglas de Optimización Global:**
-   - `-optimizationpasses 5`: Ejecuta 5 ciclos de análisis para optimizar bucles, propagar constantes y eliminar código muerto en profundidad.
-   - `-allowaccessmodification`: Permite a R8 ampliar la visibilidad de clases y miembros privados para facilitar el *method inlining*.
-   - `-overloadaggressively`: Sobrecarga nombres de métodos para reducir la tabla de cadenas del DEX.
-
-2. **Eliminación de Logs en Bytecode:**
-   - `-assumenosideeffects class android.util.Log`: Elimina llamadas a `Log.v()`, `Log.d()`, `Log.i()` y `Log.println()` sin dejar rastro en el binario.
-
-3. **Protección de Room Database:**
-   - `-keep class * extends androidx.room.RoomDatabase`: Mantiene las clases de base de datos.
-   - `-keep @androidx.room.Entity class * { *; }`: Protege los campos de las tablas SQLite (`ChatEntity`, `MessageEntity`, `FolderTabEntity`).
-   - `-keep @androidx.room.Dao interface * { *; }`: Protege las interfaces DAO (`ChatDao`, `MessageDao`, `FolderDao`).
-
-4. **Protección de Jetpack Compose:**
-   - Conservación de los anotadores `@Composable` y de los mutadores de estado `State<T>`, `MutableState<T>`.
-
-5. **Protección de Credenciales de Telegram en `BuildConfig`:**
-   - `-keep class com.example.BuildConfig { public static final int TELEGRAM_API_ID; public static final java.lang.String TELEGRAM_API_HASH; }`
+- Copiar la imagen oficial a `app/src/main/res/drawable/kronogram_brand_logo.jpg`.
+- Generar mediante ImageMagick los iconos rasterizados `ic_launcher.png` e `ic_launcher_round.png` directamente desde este archivo para las densidades `mdpi`, `hdpi`, `xhdpi`, `xxhdpi` y `xxxhdpi`.
+- Reemplazar el icono genérico en la pantalla de bienvenida y de autenticación por la imagen oficial del logotipo con esquinas redondeadas o formato circular.
 
 ---
 
-### 3. Plan de Verificación
+### 2. Flujo de Autenticación y Conexión de Mensajería
 
-1. Aplicar las reglas en `app/proguard-rules.pro`.
-2. Actualizar el bloque `buildTypes` en `app/build.gradle.kts`.
-3. Ejecutar `compile_applet` para validar que R8 procesa y empaqueta el APK con éxito sin conflictos de símbolos ni advertencias fatales.
-4. Documentar los cambios en `README.md`.
+- **Paso 1: Teléfono & País:** Selector de prefijo de país con búsqueda rápida (+34 España, +52 México, +54 Argentina, +1 EE.UU., +57 Colombia, +56 Chile, etc.) y campo de teléfono validado.
+- **Paso 2: Código de Confirmación:** Pantalla interactiva que solicita el código de 5 dígitos enviado por Telegram, con cuenta atrás de reenvío de 60 segundos y opción de reenvío por SMS.
+- **Paso 3: 2FA & Sesión:** Entrada de contraseña en la nube si la cuenta está protegida. Al completar, se guarda la sesión persistente con el número y nombre del usuario.
+- **Mensajería Reactiva:** Conexión completa con la base de datos Room para enviar, recibir, programar y borrar mensajes en tiempo real.
+
+---
+
+### 3. Pantallas Dedicadas de Ajustes Nativos de Telegram
+
+Se añadirán los siguientes destinos de navegación y pantallas independientes:
+
+1. **`NotificationsSettingsScreen`:**
+   - Notificaciones para chats privados, grupos y canales (interruptor, sonido, vibración).
+   - Vista previa de mensajes en la barra de estado.
+   - Sonidos en la app y contador de mensajes no leídos (incluir/excluir chats silenciados).
+2. **`PrivacySettingsScreen`:**
+   - Quién puede ver mi número de teléfono (Todos, Mis contactos, Nadie).
+   - Quién puede ver mi última hora de conexión y estado en línea.
+   - Bloqueo con código de acceso / PIN de la aplicación.
+   - Verificación en dos pasos (2FA).
+   - Lista de usuarios bloqueados.
+3. **`DataStorageSettingsScreen`:**
+   - Desglose gráfico de uso de almacenamiento (Caché, Fotos, Vídeos, Archivos).
+   - Botón interactivo "Limpiar Caché de KronoGram" con simulación de liberación de espacio.
+   - Descarga automática de archivos multimedia (con datos móviles, con Wi-Fi, en itinerancia).
+4. **`ChatSettingsScreen`:**
+   - Selector visual de tema: **Día (Telegram Clásico)**, **Noche (Obsidiana)**, **AMOLED Puro**.
+   - Barra deslizante de tamaño de texto del mensaje (12 sp a 24 sp) con burbuja de previsualización en vivo.
+   - Selector de radio de esquinas de las burbujas (de cuadradas a redondeadas).
+5. **`DevicesSettingsScreen`:**
+   - Sesión actual en este teléfono (modelo, IP, versión de Android).
+   - Sesiones activas en otros equipos (KronoGram Desktop, Telegram Web).
+   - Botón rojo para "Cerrar todas las demás sesiones".
+6. **`LanguageSettingsScreen`:**
+   - Lista de idiomas (Español, English, Français, Deutsch, Italiano, Português, Русский) con cambio instantáneo de selección.
+
+---
+
+### 4. Perfeccionamiento del Tema Día Clásico de Telegram
+
+- Cabecera en azul clásico Telegram `#527DA3` / `#5682A3`.
+- Fondo de pantalla de chat en gris azulado suave `#E4E9EE`.
+- Burbujas salientes en verde clásico `#EFFDDE` con borde sutil y marcas de verificación dobles en verde `#4FAE4E`.
+- Burbujas entrantes en blanco puro `#FFFFFF`.
+- Texto en alto contraste negro carbón `#1C242B`.
+
+---
+
+### 5. Corrección de Textos Cortados y Mejoras de Layout
+
+1. **Barra Superior (`ChatListScreen`):**
+   - Eliminar el bloque vertical invasivo `3757 / 4376`.
+   - Colocar el título "KronoGram" limpio y elegante con un indicador sutil de estado de conexión.
+2. **Pantalla de Bienvenida (`OnboardingWizardScreen`):**
+   - Rediseñar los botones rápidos con texto completo en formato de tarjetas o chips horizontales ("Todo Activo", "Esencial", "Minimalista").
+   - Ajustar las descripciones de los ítems para que admitan salto de línea sin recortarse.
+3. **Menú Lateral (`KronoDrawer`):**
+   - Añadir `.verticalScroll(rememberScrollState())` y `.navigationBarsPadding()` para garantizar que todas las opciones (incluyendo los ajustes de Telegram y KronoGram) se puedan ver y tocar en cualquier tamaño de pantalla.
+4. **Lista de Conversaciones:**
+   - Agregar `PaddingValues(bottom = 88.dp)` para que el botón flotante de redacción no oculte nunca el último chat de la lista.
+   - Ajustar el ancho del título del chat y de la última hora de mensaje para que no se trunquen prematuramente.
+
+---
+
+### 6. Plan de Verificación
+
+- Validar compilación con `compile_applet`.
+- Comprobar que todos los enlaces de ajustes navegan a sus pantallas correspondientes y que el botón de volver (flecha atrás y botón físico de Android) funciona en todas las vistas.
+- Verificar que el cambio entre los 3 temas (Día, Noche, AMOLED) actualiza la interfaz de inmediato.

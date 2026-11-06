@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.local.AppDatabase
 import com.example.data.model.ChatEntity
 import com.example.data.model.FolderTabEntity
-import com.example.data.model.MessageEntity
 import com.example.data.repository.ChatRepository
 import com.example.data.repository.FolderRepository
 import com.example.data.repository.KronoPreferencesRepository
@@ -30,6 +29,13 @@ sealed class ScreenDestination {
     object Settings : ScreenDestination()
     object KronoSettings : ScreenDestination()
     object FolderManager : ScreenDestination()
+    // Dedicated Native Telegram Settings screens
+    object NotificationsSettings : ScreenDestination()
+    object PrivacySettings : ScreenDestination()
+    object DataStorageSettings : ScreenDestination()
+    object ChatSettings : ScreenDestination()
+    object DevicesSettings : ScreenDestination()
+    object LanguageSettings : ScreenDestination()
 }
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -94,7 +100,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
-            // Check if onboarding completed
             if (!preferencesRepo.settingsState.value.isOnboardingCompleted) {
                 _screenDestination.value = ScreenDestination.Onboarding
             } else if (engine.authState.value !is AuthState.Ready) {
@@ -141,7 +146,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun navigateBack() {
         when (_screenDestination.value) {
             is ScreenDestination.ChatDetail -> _screenDestination.value = ScreenDestination.ChatList
+            is ScreenDestination.NotificationsSettings,
+            is ScreenDestination.PrivacySettings,
+            is ScreenDestination.DataStorageSettings,
+            is ScreenDestination.ChatSettings,
+            is ScreenDestination.DevicesSettings,
+            is ScreenDestination.LanguageSettings,
             is ScreenDestination.KronoSettings -> _screenDestination.value = ScreenDestination.Settings
+
             is ScreenDestination.FolderManager -> _screenDestination.value = ScreenDestination.KronoSettings
             is ScreenDestination.Settings -> _screenDestination.value = ScreenDestination.ChatList
             is ScreenDestination.Auth -> {
@@ -216,5 +228,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val newId = chatRepo.createNewChat(title, username, type)
             navigateTo(ScreenDestination.ChatDetail(newId))
         }
+    }
+
+    fun setNotificationSetting(type: String, enabled: Boolean) {
+        preferencesRepo.setNotificationSetting(type, enabled)
+    }
+
+    fun setPrivacySetting(setting: String, value: String) {
+        preferencesRepo.setPrivacySetting(setting, value)
+    }
+
+    fun setAutoDownload(type: String, enabled: Boolean) {
+        preferencesRepo.setAutoDownload(type, enabled)
+    }
+
+    fun setChatAppearance(fontSize: Int, cornerRadius: Int) {
+        preferencesRepo.setChatAppearance(fontSize, cornerRadius)
+    }
+
+    fun setLanguage(lang: String) {
+        preferencesRepo.setLanguage(lang)
+    }
+
+    fun clearCache() {
+        preferencesRepo.clearCache()
     }
 }

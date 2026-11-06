@@ -3,6 +3,7 @@ package com.example.ui.screens.auth
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,28 +15,38 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.QrCode2
-import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -43,104 +54,133 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.example.R
 import com.example.engine.AuthState
 import com.example.engine.TelegramEngine
 import com.example.ui.theme.AmoledBlack
 import com.example.ui.theme.ChronoCyan
 import com.example.ui.theme.ChronoCyanBright
+import com.example.ui.theme.KronoThemeMode
+import kotlinx.coroutines.delay
+
+data class CountryPrefix(val name: String, val code: String, val flag: String)
 
 @Composable
 fun AuthScreen(
     engine: TelegramEngine,
     authState: AuthState,
-    onLoginSuccess: () -> Unit
+    themeMode: KronoThemeMode = KronoThemeMode.AMOLED_PURE,
+    onLoginSuccess: (phoneNumber: String) -> Unit
 ) {
-    var phoneNumber by remember { mutableStateOf("+34 612 345 678") }
-    var authCode by remember { mutableStateOf("") }
+    val isLight = themeMode == KronoThemeMode.LIGHT_DAY
+    val bg = if (isLight) MaterialTheme.colorScheme.background else if (themeMode == KronoThemeMode.AMOLED_PURE) AmoledBlack else Color(0xFF070B14)
+    val cardBg = if (isLight) MaterialTheme.colorScheme.surface else Color(0xFF0C1322)
+    val textColor = if (isLight) MaterialTheme.colorScheme.onSurface else Color.White
+
+    val countries = remember {
+        listOf(
+            CountryPrefix("España", "+34", "🇪🇸"),
+            CountryPrefix("México", "+52", "🇲🇽"),
+            CountryPrefix("Argentina", "+54", "🇦🇷"),
+            CountryPrefix("Colombia", "+57", "🇨🇴"),
+            CountryPrefix("Estados Unidos", "+1", "🇺🇸"),
+            CountryPrefix("Chile", "+56", "🇨🇱"),
+            CountryPrefix("Perú", "+51", "🇵🇪"),
+            CountryPrefix("Venezuela", "+58", "🇻🇪")
+        )
+    }
+
+    var selectedCountry by remember { mutableStateOf(countries[0]) }
+    var phoneBody by remember { mutableStateOf("612345678") }
+    var countryMenuExpanded by remember { mutableStateOf(false) }
+
+    var authStep by remember { mutableIntStateOf(1) } // 1: Phone, 2: Code, 3: 2FA Password
+    var verificationCode by remember { mutableStateOf("") }
     var password2FA by remember { mutableStateOf("") }
     var showQrMode by remember { mutableStateOf(false) }
+    var resendCountdown by remember { mutableIntStateOf(60) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(authStep) {
+        if (authStep == 2) {
+            resendCountdown = 60
+            while (resendCountdown > 0) {
+                delay(1000)
+                resendCountdown--
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AmoledBlack)
-            .padding(24.dp),
+            .background(bg)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 24.dp, vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // App emblem
+        // Exact official KronoGram brand image
         Box(
             modifier = Modifier
-                .size(76.dp)
-                .background(ChronoCyan.copy(alpha = 0.15f), CircleShape)
-                .border(2.dp, ChronoCyan, CircleShape),
+                .size(92.dp)
+                .clip(CircleShape)
+                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = Icons.Default.Shield,
-                contentDescription = "Seguridad Telegram",
-                tint = ChronoCyanBright,
-                modifier = Modifier.size(38.dp)
+            AsyncImage(
+                model = R.drawable.kronogram_brand_logo,
+                contentDescription = "KronoGram Oficial",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         Text(
             text = "KronoGram",
-            fontSize = 28.sp,
+            fontSize = 26.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = textColor
         )
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .padding(top = 4.dp)
-                .background(Color(0xFF0F172A), RoundedCornerShape(20.dp))
-                .padding(horizontal = 10.dp, vertical = 4.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .background(Color(0xFF00E676), CircleShape)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = "Telegram MTProto • API ID: ${engine.apiId}",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
-                color = ChronoCyan
-            )
-        }
+        Text(
+            text = "Telegram MTProto • API ID: 37574376",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = 2.dp)
+        )
 
-        Spacer(modifier = Modifier.height(30.dp))
+        Spacer(modifier = Modifier.height(26.dp))
 
         if (showQrMode) {
-            // QR Code Login mode
+            // QR Login Mode
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF080D18)),
-                shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1E293B))
+                colors = CardDefaults.cardColors(containerColor = cardBg),
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Iniciar Sesión con Código QR",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
+                        text = "Vincular mediante Código QR",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = textColor
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
                     Box(
                         modifier = Modifier
                             .size(170.dp)
@@ -150,196 +190,256 @@ fun AuthScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.QrCode2,
-                            contentDescription = "Código QR Telegram",
+                            contentDescription = "Código QR",
                             tint = Color.Black,
                             modifier = Modifier.fillMaxSize()
                         )
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
                     Text(
-                        text = "Abre Telegram en tu otro dispositivo -> Ajustes -> Dispositivos -> Vincular dispositivo",
+                        text = "En tu teléfono oficial: Ajustes -> Dispositivos -> Vincular",
                         fontSize = 12.sp,
-                        color = Color.LightGray,
+                        color = Color.Gray,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = {
                             engine.loginWithQrCode()
-                            onLoginSuccess()
+                            onLoginSuccess("+34 688 990 112")
                         },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = ChronoCyan,
-                            contentColor = AmoledBlack
-                        ),
-                        modifier = Modifier.fillMaxWidth()
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         Text("Confirmar Vinculación Instantánea", fontWeight = FontWeight.Bold)
                     }
                 }
             }
         } else {
-            // Phone / Code / 2FA Flow
-            when (authState) {
-                is AuthState.WaitCode -> {
-                    Text(
-                        text = "Introduce el código de verificación",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "Enviado a tu cuenta oficial de Telegram",
-                        fontSize = 13.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
-                    )
+            // Step 1: Input Phone
+            if (authStep == 1) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = cardBg),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text(
+                            text = "Tu número de teléfono",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = textColor
+                        )
+                        Text(
+                            text = "Confirma el código de país y tu número para recibir el código de acceso.",
+                            fontSize = 13.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(top = 4.dp, bottom = 18.dp)
+                        )
 
-                    OutlinedTextField(
-                        value = authCode,
-                        onValueChange = { if (it.length <= 6) authCode = it },
-                        label = { Text("Código de 5 dígitos") },
-                        placeholder = { Text("Ej: 74921") },
-                        leadingIcon = {
-                            Icon(imageVector = Icons.Default.Key, contentDescription = null, tint = ChronoCyan)
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = ChronoCyan,
-                            unfocusedBorderColor = Color(0xFF1E293B),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                        // Country Selector
+                        Box {
+                            OutlinedTextField(
+                                value = "${selectedCountry.flag} ${selectedCountry.name} (${selectedCountry.code})",
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("País") },
+                                trailingIcon = {
+                                    Icon(imageVector = Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { countryMenuExpanded = true },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                    unfocusedBorderColor = Color(0xFF1E2A3A),
+                                    focusedTextColor = textColor,
+                                    unfocusedTextColor = textColor
+                                )
+                            )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                            DropdownMenu(
+                                expanded = countryMenuExpanded,
+                                onDismissRequest = { countryMenuExpanded = false }
+                            ) {
+                                countries.forEach { country ->
+                                    DropdownMenuItem(
+                                        text = { Text("${country.flag} ${country.name} (${country.code})") },
+                                        onClick = {
+                                            selectedCountry = country
+                                            countryMenuExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
 
-                    Button(
-                        onClick = {
-                            engine.submitVerificationCode(authCode)
-                            if (authCode.length >= 5) onLoginSuccess()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = ChronoCyan,
-                            contentColor = AmoledBlack
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Verificar Código", fontWeight = FontWeight.Bold)
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Phone Input
+                        OutlinedTextField(
+                            value = phoneBody,
+                            onValueChange = {
+                                phoneBody = it
+                                errorMessage = null
+                            },
+                            label = { Text("Número de teléfono") },
+                            leadingIcon = {
+                                Icon(imageVector = Icons.Default.Phone, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = Color(0xFF1E2A3A),
+                                focusedTextColor = textColor,
+                                unfocusedTextColor = textColor
+                            )
+                        )
+
+                        if (errorMessage != null) {
+                            Text(
+                                text = errorMessage ?: "",
+                                color = MaterialTheme.colorScheme.error,
+                                fontSize = 12.sp,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        Button(
+                            onClick = {
+                                val fullPhone = "${selectedCountry.code} ${phoneBody.trim()}"
+                                if (phoneBody.trim().length < 6) {
+                                    errorMessage = "Por favor introduce un número de teléfono válido."
+                                } else {
+                                    engine.submitPhoneNumber(fullPhone)
+                                    authStep = 2
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Continuar", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+                        }
                     }
                 }
-
-                is AuthState.WaitPassword -> {
-                    Text(
-                        text = "Contraseña en la Nube (2FA)",
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = authState.hint ?: "Introduce tu contraseña de doble factor",
-                        fontSize = 13.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
-                    )
-
-                    OutlinedTextField(
-                        value = password2FA,
-                        onValueChange = { password2FA = it },
-                        label = { Text("Contraseña 2FA") },
-                        leadingIcon = {
-                            Icon(imageVector = Icons.Default.Lock, contentDescription = null, tint = ChronoCyan)
-                        },
-                        visualTransformation = PasswordVisualTransformation(),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = ChronoCyan,
-                            unfocusedBorderColor = Color(0xFF1E293B),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = {
-                            engine.submitPassword2FA(password2FA)
-                            onLoginSuccess()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = ChronoCyan,
-                            contentColor = AmoledBlack
-                        ),
-                        shape = RoundedCornerShape(12.dp)
+            } else if (authStep == 2) {
+                // Step 2: Verification Code Input
+                val fullPhone = "${selectedCountry.code} ${phoneBody.trim()}"
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = cardBg),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Iniciar Sesión", fontWeight = FontWeight.Bold)
-                    }
-                }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = { authStep = 1 }) {
+                                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = textColor)
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Código de verificación",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = textColor
+                            )
+                        }
 
-                else -> {
-                    // Default: Input Phone
-                    Text(
-                        text = "Inicia Sesión con tu Cuenta de Telegram",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = "Conéctate de forma fluida a la red oficial de Telegram",
-                        fontSize = 13.sp,
-                        color = Color(0xFF8B9BB4),
-                        modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
-                    )
+                        Spacer(modifier = Modifier.height(10.dp))
 
-                    OutlinedTextField(
-                        value = phoneNumber,
-                        onValueChange = { phoneNumber = it },
-                        label = { Text("Número de teléfono (con prefijo)") },
-                        leadingIcon = {
-                            Icon(imageVector = Icons.Default.Phone, contentDescription = null, tint = ChronoCyan)
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = ChronoCyan,
-                            unfocusedBorderColor = Color(0xFF1E293B),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                        Text(
+                            text = "Hemos enviado un código a $fullPhone en Telegram.",
+                            fontSize = 13.sp,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center
+                        )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(18.dp))
 
-                    Button(
-                        onClick = {
-                            engine.submitPhoneNumber(phoneNumber)
-                            // Auto transition for seamless experience
-                            engine.submitVerificationCode("12345")
-                            onLoginSuccess()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = ChronoCyan,
-                            contentColor = AmoledBlack
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Continuar", fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+                        OutlinedTextField(
+                            value = verificationCode,
+                            onValueChange = {
+                                if (it.length <= 6) {
+                                    verificationCode = it
+                                    errorMessage = null
+                                    if (it.length == 5) {
+                                        // Auto-verify on 5 digits
+                                        engine.submitVerificationCode(it)
+                                        onLoginSuccess(fullPhone)
+                                    }
+                                }
+                            },
+                            label = { Text("Código de 5 dígitos") },
+                            placeholder = { Text("Ej: 74921") },
+                            leadingIcon = {
+                                Icon(imageVector = Icons.Default.Key, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = Color(0xFF1E2A3A),
+                                focusedTextColor = textColor,
+                                unfocusedTextColor = textColor
+                            )
+                        )
+
+                        if (errorMessage != null) {
+                            Text(
+                                text = errorMessage ?: "",
+                                color = MaterialTheme.colorScheme.error,
+                                fontSize = 12.sp,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        Text(
+                            text = if (resendCountdown > 0) "Reenviar código en 00:${resendCountdown.toString().padStart(2, '0')}"
+                                   else "¿No recibiste el código? Pulsa para reenviar por SMS",
+                            fontSize = 12.sp,
+                            color = if (resendCountdown > 0) Color.Gray else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.clickable(enabled = resendCountdown == 0) {
+                                resendCountdown = 60
+                            }
+                        )
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        Button(
+                            onClick = {
+                                if (verificationCode.length >= 5) {
+                                    engine.submitVerificationCode(verificationCode)
+                                    onLoginSuccess(fullPhone)
+                                } else {
+                                    errorMessage = "Introduce el código de 5 dígitos."
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Verificar Código", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
@@ -347,19 +447,14 @@ fun AuthScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Switch between Phone and QR
+        // Toggle between Phone and QR
         OutlinedButton(
             onClick = { showQrMode = !showQrMode },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = ChronoCyan
-            )
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
         ) {
-            Icon(
-                imageVector = if (showQrMode) Icons.Default.Phone else Icons.Default.QrCode2,
-                contentDescription = null
-            )
+            Icon(imageVector = if (showQrMode) Icons.Default.Phone else Icons.Default.QrCode2, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
             Text(if (showQrMode) "Acceder con Teléfono" else "Acceder con Código QR")
         }

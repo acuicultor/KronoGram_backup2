@@ -3,7 +3,6 @@ package com.example.ui.screens.chatdetail
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -32,13 +31,13 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SentimentSatisfiedAlt
 import androidx.compose.material.icons.filled.Timer
-import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -68,7 +67,6 @@ import com.example.ui.theme.AmoledBlack
 import com.example.ui.theme.BubbleInAmoled
 import com.example.ui.theme.BubbleOutAmoled
 import com.example.ui.theme.ChronoCyan
-import com.example.ui.theme.ChronoCyanBright
 import com.example.ui.theme.ChronoDestructRed
 import com.example.ui.theme.ChronoOnlineGreen
 import com.example.ui.theme.KronoThemeMode
@@ -89,8 +87,9 @@ fun ChatDetailScreen(
     var showSchedulerDialog by remember { mutableStateOf(false) }
 
     val listState = rememberLazyListState()
-    val isAmoled = settings.themeMode == KronoThemeMode.AMOLED_PURE
-    val bg = if (isAmoled) AmoledBlack else Color(0xFF090E1A)
+    val isLight = settings.themeMode == KronoThemeMode.LIGHT_DAY
+    val bg = if (isLight) MaterialTheme.colorScheme.background else if (settings.themeMode == KronoThemeMode.AMOLED_PURE) AmoledBlack else Color(0xFF090E1A)
+    val inputBarBg = if (isLight) MaterialTheme.colorScheme.surface else if (settings.themeMode == KronoThemeMode.AMOLED_PURE) AmoledBlack else Color(0xFF0C1322)
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
@@ -112,7 +111,7 @@ fun ChatDetailScreen(
                             modifier = Modifier
                                 .size(40.dp)
                                 .background(
-                                    if (chat?.isSecretChat == true) ChronoCyan.copy(alpha = 0.2f) else Color(0xFF1E293B),
+                                    if (chat?.isSecretChat == true) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.2f),
                                     CircleShape
                                 ),
                             contentAlignment = Alignment.Center
@@ -121,7 +120,7 @@ fun ChatDetailScreen(
                                 Icon(
                                     imageVector = Icons.Default.Lock,
                                     contentDescription = "Cifrado E2E",
-                                    tint = ChronoCyan,
+                                    tint = Color.White,
                                     modifier = Modifier.size(20.dp)
                                 )
                             } else {
@@ -142,7 +141,7 @@ fun ChatDetailScreen(
                                     Icon(
                                         imageVector = Icons.Default.Lock,
                                         contentDescription = null,
-                                        tint = ChronoCyan,
+                                        tint = Color.White,
                                         modifier = Modifier.size(13.dp).padding(end = 3.dp)
                                     )
                                 }
@@ -158,7 +157,7 @@ fun ChatDetailScreen(
                                        else if (chat?.isOnline == true) "en línea"
                                        else "visto recientemente",
                                 fontSize = 11.sp,
-                                color = if (chat?.isOnline == true) ChronoOnlineGreen else Color(0xFF8B9BB4)
+                                color = if (chat?.isOnline == true) Color(0xFFB9F6CA) else Color.White.copy(alpha = 0.7f)
                             )
                         }
                     }
@@ -170,7 +169,7 @@ fun ChatDetailScreen(
                 },
                 actions = {
                     IconButton(onClick = { showSchedulerDialog = true }) {
-                        Icon(imageVector = Icons.Default.Schedule, contentDescription = "Programar Mensaje Chrono", tint = ChronoCyan)
+                        Icon(imageVector = Icons.Default.Schedule, contentDescription = "Programar Mensaje", tint = Color.White)
                     }
                     IconButton(onClick = {}) {
                         Icon(imageVector = Icons.Default.Call, contentDescription = "Llamar", tint = Color.White)
@@ -180,7 +179,7 @@ fun ChatDetailScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (isAmoled) AmoledBlack else Color(0xFF070B14)
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             )
 
@@ -189,14 +188,14 @@ fun ChatDetailScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color(0xFF0A1828))
+                        .background(if (isLight) Color(0xFFDCEAF5) else Color(0xFF0A1828))
                         .padding(horizontal = 16.dp, vertical = 6.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "🔒 Chat secreto de extremo a extremo: nada queda en los servidores",
+                        text = "🔒 Chat secreto de extremo a extremo: nada queda en servidores",
                         fontSize = 11.sp,
-                        color = ChronoCyanBright
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -213,7 +212,9 @@ fun ChatDetailScreen(
                 items(messages, key = { it.id }) { message ->
                     MessageBubble(
                         message = message,
-                        isSecretChat = chat?.isSecretChat == true
+                        isLight = isLight,
+                        fontSize = settings.chatFontSize,
+                        cornerRadius = settings.bubbleCornerRadius
                     )
                 }
             }
@@ -222,7 +223,7 @@ fun ChatDetailScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(if (isAmoled) AmoledBlack else Color(0xFF0C1322))
+                    .background(inputBarBg)
                     .padding(horizontal = 8.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -241,12 +242,12 @@ fun ChatDetailScreen(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(24.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFF131D2E),
-                        unfocusedContainerColor = Color(0xFF131D2E),
-                        focusedBorderColor = ChronoCyan,
-                        unfocusedBorderColor = Color(0xFF1E2C44),
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
+                        focusedContainerColor = if (isLight) Color(0xFFF1F5F9) else Color(0xFF131D2E),
+                        unfocusedContainerColor = if (isLight) Color(0xFFF1F5F9) else Color(0xFF131D2E),
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedTextColor = if (isLight) Color(0xFF1F2326) else Color.White,
+                        unfocusedTextColor = if (isLight) Color(0xFF1F2326) else Color.White
                     ),
                     singleLine = false,
                     maxLines = 4
@@ -254,11 +255,10 @@ fun ChatDetailScreen(
 
                 Spacer(modifier = Modifier.width(6.dp))
 
-                // Chrono Schedule / Send Button
                 Box(
                     modifier = Modifier
                         .size(46.dp)
-                        .background(ChronoCyan, CircleShape)
+                        .background(MaterialTheme.colorScheme.primary, CircleShape)
                         .clickable {
                             if (messageText.isNotBlank()) {
                                 onSendMessage(
@@ -275,7 +275,7 @@ fun ChatDetailScreen(
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Enviar",
-                        tint = AmoledBlack,
+                        tint = Color.White,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -309,7 +309,9 @@ fun ChatDetailScreen(
 @Composable
 fun MessageBubble(
     message: MessageEntity,
-    isSecretChat: Boolean
+    isLight: Boolean,
+    fontSize: Int,
+    cornerRadius: Int
 ) {
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     val formattedTime = remember(message.timestamp) {
@@ -318,8 +320,19 @@ fun MessageBubble(
 
     val isOut = message.isOutgoing
     val alignment = if (isOut) Alignment.End else Alignment.Start
-    val bubbleColor = if (isOut) BubbleOutAmoled else BubbleInAmoled
-    val bubbleBorder = if (isOut) ChronoCyan.copy(alpha = 0.3f) else Color(0xFF1E2C44)
+
+    val bubbleColor = if (isOut) {
+        if (isLight) Color(0xFFEFFDDE) else BubbleOutAmoled
+    } else {
+        if (isLight) Color.White else BubbleInAmoled
+    }
+
+    val textColor = if (isLight) Color(0xFF1F2326) else Color.White
+    val bubbleBorder = if (isOut) {
+        if (isLight) Color(0xFFC7EBB0) else ChronoCyan.copy(alpha = 0.3f)
+    } else {
+        if (isLight) Color(0xFFD6DCE2) else Color(0xFF1E2C44)
+    }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -329,10 +342,10 @@ fun MessageBubble(
             modifier = Modifier
                 .clip(
                     RoundedCornerShape(
-                        topStart = 16.dp,
-                        topEnd = 16.dp,
-                        bottomStart = if (isOut) 16.dp else 2.dp,
-                        bottomEnd = if (isOut) 2.dp else 16.dp
+                        topStart = cornerRadius.dp,
+                        topEnd = cornerRadius.dp,
+                        bottomStart = if (isOut) cornerRadius.dp else 2.dp,
+                        bottomEnd = if (isOut) 2.dp else cornerRadius.dp
                     )
                 )
                 .background(bubbleColor)
@@ -340,10 +353,10 @@ fun MessageBubble(
                     width = 1.dp,
                     color = bubbleBorder,
                     shape = RoundedCornerShape(
-                        topStart = 16.dp,
-                        topEnd = 16.dp,
-                        bottomStart = if (isOut) 16.dp else 2.dp,
-                        bottomEnd = if (isOut) 2.dp else 16.dp
+                        topStart = cornerRadius.dp,
+                        topEnd = cornerRadius.dp,
+                        bottomStart = if (isOut) cornerRadius.dp else 2.dp,
+                        bottomEnd = if (isOut) 2.dp else cornerRadius.dp
                     )
                 )
                 .padding(horizontal = 14.dp, vertical = 9.dp)
@@ -352,17 +365,17 @@ fun MessageBubble(
                 if (!isOut) {
                     Text(
                         text = message.senderName,
-                        fontSize = 12.sp,
+                        fontSize = (fontSize - 3).coerceAtLeast(11).sp,
                         fontWeight = FontWeight.Bold,
-                        color = ChronoCyan,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(bottom = 2.dp)
                     )
                 }
 
                 Text(
                     text = message.text,
-                    fontSize = 15.sp,
-                    color = Color.White
+                    fontSize = fontSize.sp,
+                    color = textColor
                 )
 
                 Spacer(modifier = Modifier.height(3.dp))
@@ -390,7 +403,7 @@ fun MessageBubble(
                         Icon(
                             imageVector = Icons.Default.Schedule,
                             contentDescription = "Programado",
-                            tint = ChronoCyan,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(12.dp).padding(end = 3.dp)
                         )
                     }
@@ -398,7 +411,7 @@ fun MessageBubble(
                     Text(
                         text = formattedTime,
                         fontSize = 11.sp,
-                        color = Color(0xFF7F91AB)
+                        color = Color.Gray
                     )
 
                     if (isOut) {
@@ -407,13 +420,13 @@ fun MessageBubble(
                             "READ" -> Icon(
                                 imageVector = Icons.Default.DoneAll,
                                 contentDescription = "Leído",
-                                tint = ChronoCyan,
+                                tint = if (isLight) Color(0xFF4FAE4E) else ChronoCyan,
                                 modifier = Modifier.size(15.dp)
                             )
                             "SENT" -> Icon(
                                 imageVector = Icons.Default.Done,
                                 contentDescription = "Enviado",
-                                tint = Color.LightGray,
+                                tint = Color.Gray,
                                 modifier = Modifier.size(15.dp)
                             )
                             else -> Icon(
@@ -435,16 +448,16 @@ fun ChronoScheduleDialog(
     onDismiss: () -> Unit,
     onScheduleConfirmed: (delaySeconds: Int, destructSeconds: Int) -> Unit
 ) {
-    var selectedDelayOption by remember { mutableIntStateOf(0) } // 0 = now, 60 = 1 min, 300 = 5 min, 3600 = 1 hora
-    var selectedDestructOption by remember { mutableIntStateOf(0) } // 0 = off, 10 = 10s, 30 = 30s, 60 = 60s
+    var selectedDelayOption by remember { mutableIntStateOf(0) }
+    var selectedDestructOption by remember { mutableIntStateOf(0) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(imageVector = Icons.Default.Schedule, contentDescription = null, tint = ChronoCyan)
+                Icon(imageVector = Icons.Default.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Programador Chrono", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text("Programador Chrono", fontSize = 17.sp, fontWeight = FontWeight.Bold)
             }
         },
         text = {
@@ -453,7 +466,7 @@ fun ChronoScheduleDialog(
                     text = "CUÁNDO ENVIAR EL MENSAJE",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = ChronoCyan
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 val delays = listOf(
@@ -474,10 +487,10 @@ fun ChronoScheduleDialog(
                         RadioButton(
                             selected = selectedDelayOption == sec,
                             onClick = { selectedDelayOption = sec },
-                            colors = RadioButtonDefaults.colors(selectedColor = ChronoCyan)
+                            colors = RadioButtonDefaults.colors(selectedColor = MaterialTheme.colorScheme.primary)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(label, fontSize = 13.sp, color = Color.White)
+                        Text(label, fontSize = 13.sp)
                     }
                 }
 
@@ -511,7 +524,7 @@ fun ChronoScheduleDialog(
                             colors = RadioButtonDefaults.colors(selectedColor = ChronoDestructRed)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(label, fontSize = 13.sp, color = Color.White)
+                        Text(label, fontSize = 13.sp)
                     }
                 }
             }
@@ -519,20 +532,16 @@ fun ChronoScheduleDialog(
         confirmButton = {
             Button(
                 onClick = { onScheduleConfirmed(selectedDelayOption, selectedDestructOption) },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = ChronoCyan,
-                    contentColor = AmoledBlack
-                )
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text("Confirmar Envío", fontWeight = FontWeight.Bold)
+                Text("Confirmar Envío", fontWeight = FontWeight.Bold, color = Color.White)
             }
         },
         dismissButton = {
             OutlinedButton(onClick = onDismiss) {
-                Text("Cancelar", color = Color.Gray)
+                Text("Cancelar")
             }
         },
-        containerColor = Color(0xFF090F1C),
         shape = RoundedCornerShape(16.dp)
     )
 }

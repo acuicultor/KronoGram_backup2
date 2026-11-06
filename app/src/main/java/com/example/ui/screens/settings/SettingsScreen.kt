@@ -34,17 +34,22 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.example.R
 import com.example.data.repository.KronoSettingsState
 import com.example.ui.theme.AmoledBlack
 import com.example.ui.theme.ChronoCyan
@@ -58,10 +63,18 @@ fun SettingsScreen(
     settings: KronoSettingsState,
     onBack: () -> Unit,
     onNavigateToKronoSettings: () -> Unit,
+    onNavigateToNotifications: () -> Unit,
+    onNavigateToPrivacy: () -> Unit,
+    onNavigateToDataStorage: () -> Unit,
+    onNavigateToChatSettings: () -> Unit,
+    onNavigateToDevices: () -> Unit,
+    onNavigateToLanguage: () -> Unit,
     onLogout: () -> Unit
 ) {
-    val isAmoled = settings.themeMode == KronoThemeMode.AMOLED_PURE
-    val bg = if (isAmoled) AmoledBlack else Color(0xFF090E1A)
+    val isLight = settings.themeMode == KronoThemeMode.LIGHT_DAY
+    val bg = if (isLight) MaterialTheme.colorScheme.background else if (settings.themeMode == KronoThemeMode.AMOLED_PURE) AmoledBlack else Color(0xFF090E1A)
+    val cardBg = if (isLight) MaterialTheme.colorScheme.surface else Color(0xFF0C1322)
+    val textColor = if (isLight) MaterialTheme.colorScheme.onSurface else Color.White
 
     Column(
         modifier = Modifier
@@ -83,7 +96,7 @@ fun SettingsScreen(
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = if (isAmoled) AmoledBlack else Color(0xFF070B14)
+                containerColor = MaterialTheme.colorScheme.primary
             )
         )
 
@@ -93,29 +106,24 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            // User Profile Card
+            // User Profile Card with Brand Logo Avatar
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF0C1322)),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
+                    AsyncImage(
+                        model = R.drawable.kronogram_brand_logo,
+                        contentDescription = "Avatar de KronoGram",
                         modifier = Modifier
-                            .size(56.dp)
-                            .background(Color(0xFF003852), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "RC",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ChronoCyan
-                        )
-                    }
+                            .size(60.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
 
                     Spacer(modifier = Modifier.width(14.dp))
 
@@ -124,17 +132,17 @@ fun SettingsScreen(
                             text = settings.accountDisplayName,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = textColor
                         )
                         Text(
                             text = settings.accountPhone,
                             fontSize = 13.sp,
-                            color = Color.LightGray
+                            color = Color.Gray
                         )
                         Text(
                             text = "@${settings.accountUsername}",
                             fontSize = 12.sp,
-                            color = ChronoCyan
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -142,14 +150,16 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Prominent KronoGram Settings Card (The user's requested dedicated section!)
+            // Prominent KronoGram Settings Card (Dedicated section!)
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onNavigateToKronoSettings() },
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF0A182E)),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isLight) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f) else Color(0xFF0A182E)
+                ),
                 shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(1.5.dp, ChronoCyan.copy(alpha = 0.6f))
+                border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -158,13 +168,13 @@ fun SettingsScreen(
                     Box(
                         modifier = Modifier
                             .size(46.dp)
-                            .background(ChronoCyan.copy(alpha = 0.2f), CircleShape),
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.RocketLaunch,
                             contentDescription = "KronoGram Labs",
-                            tint = ChronoCyanBright,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -177,28 +187,28 @@ fun SettingsScreen(
                                 text = "Ajustes de KronoGram",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = ChronoCyan
+                                color = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Box(
                                 modifier = Modifier
-                                    .background(ChronoCyan, RoundedCornerShape(4.dp))
+                                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(4.dp))
                                     .padding(horizontal = 4.dp, vertical = 1.dp)
                             ) {
-                                Text("PRO", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = AmoledBlack)
+                                Text("PRO", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = if (isLight) Color.White else AmoledBlack)
                             }
                         }
                         Text(
                             text = "Modo Fantasma, AMOLED Puro, Bloqueo PIN, Pestañas",
                             fontSize = 12.sp,
-                            color = Color(0xFF94A3B8)
+                            color = if (isLight) Color.Gray else Color(0xFF94A3B8)
                         )
                     }
 
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
                         contentDescription = null,
-                        tint = ChronoCyan,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
                     )
                 }
@@ -209,58 +219,70 @@ fun SettingsScreen(
             Text(
                 text = "AJUSTES DE TELEGRAM",
                 fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.Gray,
-                letterSpacing = 1.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                letterSpacing = 0.5.sp,
                 modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
             )
 
             // Telegram Standard Settings Items
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF0C1322)),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column {
                     SettingsRowItem(
                         icon = Icons.Default.Notifications,
                         title = "Notificaciones y sonidos",
-                        subtitle = "Activadas para todos los chats"
+                        subtitle = "Alertas de mensajes, sonidos y vibración",
+                        textColor = textColor,
+                        onClick = onNavigateToNotifications
                     )
-                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+                    HorizontalDivider(color = Color(0xFF162136).copy(alpha = 0.3f), thickness = 0.5.dp)
 
                     SettingsRowItem(
                         icon = Icons.Default.Security,
                         title = "Privacidad y seguridad",
-                        subtitle = "Verificación 2FA, sesiones activas"
+                        subtitle = "Última vez, 2FA, código de bloqueo",
+                        textColor = textColor,
+                        onClick = onNavigateToPrivacy
                     )
-                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+                    HorizontalDivider(color = Color(0xFF162136).copy(alpha = 0.3f), thickness = 0.5.dp)
 
                     SettingsRowItem(
                         icon = Icons.Default.DataUsage,
                         title = "Datos y almacenamiento",
-                        subtitle = "Uso de red y limpieza de caché"
+                        subtitle = "Uso de disco (${settings.cachedStorageMb} MB) y autodescarga",
+                        textColor = textColor,
+                        onClick = onNavigateToDataStorage
                     )
-                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+                    HorizontalDivider(color = Color(0xFF162136).copy(alpha = 0.3f), thickness = 0.5.dp)
 
                     SettingsRowItem(
                         icon = Icons.Default.ChatBubble,
                         title = "Ajustes de chats",
-                        subtitle = "Temas, fuentes y fondos de pantalla"
+                        subtitle = "Tema visual, tamaño de letra, esquinas",
+                        textColor = textColor,
+                        onClick = onNavigateToChatSettings
                     )
-                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+                    HorizontalDivider(color = Color(0xFF162136).copy(alpha = 0.3f), thickness = 0.5.dp)
 
                     SettingsRowItem(
                         icon = Icons.Default.Devices,
                         title = "Dispositivos",
-                        subtitle = "1 sesión activa en este teléfono"
+                        subtitle = "1 sesión activa en este teléfono",
+                        textColor = textColor,
+                        onClick = onNavigateToDevices
                     )
-                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+                    HorizontalDivider(color = Color(0xFF162136).copy(alpha = 0.3f), thickness = 0.5.dp)
 
                     SettingsRowItem(
                         icon = Icons.Default.Language,
                         title = "Idioma",
-                        subtitle = "Español (automático)"
+                        subtitle = settings.language,
+                        textColor = textColor,
+                        onClick = onNavigateToLanguage
                     )
                 }
             }
@@ -270,7 +292,7 @@ fun SettingsScreen(
             // Version info & logout
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF0C1322)),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column {
@@ -280,15 +302,15 @@ fun SettingsScreen(
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(imageVector = Icons.Default.Info, contentDescription = null, tint = ChronoCyan, modifier = Modifier.size(22.dp))
+                        Icon(imageVector = Icons.Default.Info, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
                         Spacer(modifier = Modifier.width(14.dp))
                         Column {
-                            Text("KronoGram para Android", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                            Text("Versión 1.0.0 (Target SDK 36) • MTProto API ID: 37574376", fontSize = 12.sp, color = Color.Gray)
+                            Text("KronoGram para Android", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = textColor)
+                            Text("Versión 1.0.0 (SDK 36) • MTProto API ID: 37574376", fontSize = 12.sp, color = Color.Gray)
                         }
                     }
 
-                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+                    HorizontalDivider(color = Color(0xFF162136).copy(alpha = 0.3f), thickness = 0.5.dp)
 
                     Row(
                         modifier = Modifier
@@ -312,7 +334,8 @@ fun SettingsRowItem(
     icon: ImageVector,
     title: String,
     subtitle: String,
-    onClick: () -> Unit = {}
+    textColor: Color,
+    onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -324,18 +347,18 @@ fun SettingsRowItem(
         Icon(
             imageVector = icon,
             contentDescription = title,
-            tint = ChronoCyan,
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(22.dp)
         )
         Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color.White)
-            Text(subtitle, fontSize = 11.sp, color = Color.Gray)
+            Text(title, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = textColor)
+            Text(subtitle, fontSize = 12.sp, color = Color.Gray)
         }
         Icon(
             imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
             contentDescription = null,
-            tint = Color(0xFF475569),
+            tint = Color(0xFF707579),
             modifier = Modifier.size(14.dp)
         )
     }

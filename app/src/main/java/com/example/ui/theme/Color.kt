@@ -22,18 +22,21 @@ val NightSurface = Color(0xFF101726)
 val NightSurfaceVariant = Color(0xFF182238)
 val NightCard = Color(0xFF1F2B45)
 
-// Light Theme Tokens
-val LightBackground = Color(0xFFF2F5F9)
-val LightSurface = Color(0xFFFFFFFF)
-val LightSurfaceVariant = Color(0xFFE5ECF4)
-val LightPrimary = Color(0xFF0077B6)
-val LightSecondary = Color(0xFF0096C7)
+// Telegram Classic Day (Light) Theme Tokens
+val TelegramDayPrimary = Color(0xFF527DA3)
+val TelegramDayHeader = Color(0xFF527DA3)
+val TelegramDayBackground = Color(0xFFE4E9EE)
+val TelegramDaySurface = Color(0xFFFFFFFF)
+val TelegramDaySurfaceVariant = Color(0xFFF0F2F5)
+val TelegramDayTextPrimary = Color(0xFF1F2326)
+val TelegramDayTextSecondary = Color(0xFF707579)
+val TelegramDayBubbleOut = Color(0xFFEFFDDE)
+val TelegramDayBubbleIn = Color(0xFFFFFFFF)
+val TelegramDayCheckGreen = Color(0xFF4FAE4E)
 
 // Chat Bubble & Accent Colors
 val BubbleOutAmoled = Color(0xFF003852)
 val BubbleInAmoled = Color(0xFF0F1726)
-val BubbleOutLight = Color(0xFFDCF8C6)
-val BubbleInLight = Color(0xFFFFFFFF)
 
 // Chrono Status Tokens
 val ChronoOnlineGreen = Color(0xFF00E676)

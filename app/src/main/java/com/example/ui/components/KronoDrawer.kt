@@ -1,19 +1,25 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Call
@@ -24,12 +30,11 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -39,12 +44,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import com.example.R
 import com.example.data.repository.KronoSettingsState
 import com.example.ui.theme.AmoledBlack
-import com.example.ui.theme.AmoledSurface
 import com.example.ui.theme.ChronoCyan
 import com.example.ui.theme.ChronoCyanBright
 import com.example.ui.theme.KronoThemeMode
@@ -55,21 +62,29 @@ fun KronoDrawer(
     onNavigateToSettings: () -> Unit,
     onNavigateToKronoSettings: () -> Unit,
     onNewChatClick: (String) -> Unit,
-    onToggleAmoled: (Boolean) -> Unit,
+    onSelectTheme: (KronoThemeMode) -> Unit,
     onToggleGhostMode: (Boolean) -> Unit
 ) {
+    val isLight = settings.themeMode == KronoThemeMode.LIGHT_DAY
+    val bg = if (isLight) MaterialTheme.colorScheme.surface else if (settings.themeMode == KronoThemeMode.AMOLED_PURE) AmoledBlack else Color(0xFF0A0F1D)
+    val headerBg = if (isLight) MaterialTheme.colorScheme.primary else Color(0xFF0F1728)
+    val textColor = if (isLight) Color(0xFF1F2326) else Color.White
+
     Column(
         modifier = Modifier
             .fillMaxHeight()
             .width(310.dp)
-            .background(if (settings.themeMode == KronoThemeMode.AMOLED_PURE) AmoledBlack else AmoledSurface)
-            .padding(vertical = 24.dp)
+            .background(bg)
+            .navigationBarsPadding()
+            .verticalScroll(rememberScrollState()) // Ensures no item is ever cut off!
+            .padding(bottom = 24.dp)
     ) {
-        // Profile Header
+        // User Profile Header with Official Brand Logo
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 10.dp)
+                .background(headerBg)
+                .padding(horizontal = 20.dp, vertical = 20.dp)
         ) {
             Column {
                 Row(
@@ -78,36 +93,35 @@ fun KronoDrawer(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(60.dp)
-                            .background(Color(0xFF0F2644), CircleShape),
-                        contentAlignment = Alignment.Center
+                            .size(62.dp)
+                            .clip(CircleShape)
+                            .border(2.dp, Color.White.copy(alpha = 0.8f), CircleShape)
                     ) {
-                        Text(
-                            text = "RC",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ChronoCyan
+                        AsyncImage(
+                            model = R.drawable.kronogram_brand_logo,
+                            contentDescription = "Avatar KronoGram",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
                         )
                     }
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    // Ghost Mode status badge
                     if (settings.isGhostMode) {
                         Box(
                             modifier = Modifier
-                                .background(Color(0xFF0F2644), RoundedCornerShape(12.dp))
+                                .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     imageVector = Icons.Default.VisibilityOff,
                                     contentDescription = null,
-                                    tint = ChronoCyan,
-                                    modifier = Modifier.size(14.dp)
+                                    tint = Color.White,
+                                    modifier = Modifier.size(13.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Fantasma", fontSize = 11.sp, color = ChronoCyan)
+                                Text("Fantasma", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
                             }
                         }
                     }
@@ -116,25 +130,64 @@ fun KronoDrawer(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 Text(
-                    text = "Ramon Cuenca",
-                    fontSize = 18.sp,
+                    text = settings.accountDisplayName,
+                    fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
 
                 Text(
-                    text = "+34 612 345 678 • @rcuenca",
+                    text = "${settings.accountPhone} • @${settings.accountUsername}",
                     fontSize = 13.sp,
-                    color = Color.LightGray
+                    color = Color.White.copy(alpha = 0.8f)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
-        HorizontalDivider(color = Color(0xFF1B2A44), thickness = 0.8.dp)
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Quick Toggles in Drawer
+        // 3-Way Theme Switcher (Día, Noche, AMOLED) right in Drawer!
+        Text(
+            text = "TEMA VISUAL",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            letterSpacing = 0.5.sp,
+            modifier = Modifier.padding(start = 20.dp, top = 8.dp, bottom = 6.dp)
+        )
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            DrawerThemePill(
+                label = "Día",
+                isSelected = settings.themeMode == KronoThemeMode.LIGHT_DAY,
+                onClick = { onSelectTheme(KronoThemeMode.LIGHT_DAY) },
+                modifier = Modifier.weight(1f)
+            )
+
+            DrawerThemePill(
+                label = "Noche",
+                isSelected = settings.themeMode == KronoThemeMode.DARK_NIGHT,
+                onClick = { onSelectTheme(KronoThemeMode.DARK_NIGHT) },
+                modifier = Modifier.weight(1f)
+            )
+
+            DrawerThemePill(
+                label = "AMOLED",
+                isSelected = settings.themeMode == KronoThemeMode.AMOLED_PURE,
+                onClick = { onSelectTheme(KronoThemeMode.AMOLED_PURE) },
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+        HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f), thickness = 0.5.dp)
+
+        // Ghost Mode toggle
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -144,110 +197,91 @@ fun KronoDrawer(
             Icon(
                 imageVector = Icons.Default.VisibilityOff,
                 contentDescription = null,
-                tint = ChronoCyan,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(22.dp)
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text("Modo Fantasma", fontSize = 14.sp, color = Color.White, fontWeight = FontWeight.Medium)
+                Text("Modo Fantasma", fontSize = 14.sp, color = textColor, fontWeight = FontWeight.SemiBold)
                 Text("Sin avisos de lectura ni online", fontSize = 11.sp, color = Color.Gray)
             }
             Switch(
                 checked = settings.isGhostMode,
                 onCheckedChange = onToggleGhostMode,
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = AmoledBlack,
-                    checkedTrackColor = ChronoCyan
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary
                 )
             )
         }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = Icons.Default.DarkMode,
-                contentDescription = null,
-                tint = ChronoCyan,
-                modifier = Modifier.size(22.dp)
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text("AMOLED Puro", fontSize = 14.sp, color = Color.White, fontWeight = FontWeight.Medium)
-                Text("Negro absoluto para OLED", fontSize = 11.sp, color = Color.Gray)
-            }
-            Switch(
-                checked = settings.themeMode == KronoThemeMode.AMOLED_PURE,
-                onCheckedChange = onToggleAmoled,
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = AmoledBlack,
-                    checkedTrackColor = ChronoCyan
-                )
-            )
-        }
+        HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f), thickness = 0.5.dp)
+        Spacer(modifier = Modifier.height(4.dp))
 
-        Spacer(modifier = Modifier.height(8.dp))
-        HorizontalDivider(color = Color(0xFF1B2A44), thickness = 0.8.dp)
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Actions
+        // Telegram standard actions
         DrawerItem(
             icon = Icons.Default.Group,
             title = "Nuevo Grupo",
+            textColor = textColor,
             onClick = { onNewChatClick("GROUP") }
         )
 
         DrawerItem(
             icon = Icons.Default.Lock,
             title = "Nuevo Chat Secreto (Cifrado E2E)",
-            iconTint = ChronoCyan,
+            textColor = textColor,
+            iconTint = MaterialTheme.colorScheme.primary,
             onClick = { onNewChatClick("SECRET") }
         )
 
         DrawerItem(
             icon = Icons.Default.VolumeUp,
             title = "Nuevo Canal",
+            textColor = textColor,
             onClick = { onNewChatClick("CHANNEL") }
         )
 
         DrawerItem(
             icon = Icons.Default.Person,
             title = "Contactos",
+            textColor = textColor,
             onClick = { onNewChatClick("USER") }
         )
 
         DrawerItem(
             icon = Icons.Default.Call,
-            title = "Llamadas Cifradas",
+            title = "Llamadas",
+            textColor = textColor,
             onClick = {}
         )
 
         DrawerItem(
             icon = Icons.Default.Bookmark,
             title = "Mensajes Guardados",
+            textColor = textColor,
             onClick = {}
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
-        HorizontalDivider(color = Color(0xFF1B2A44), thickness = 0.8.dp)
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
+        HorizontalDivider(color = Color.Gray.copy(alpha = 0.2f), thickness = 0.5.dp)
+        Spacer(modifier = Modifier.height(6.dp))
 
         // Telegram Settings
         DrawerItem(
             icon = Icons.Default.Settings,
             title = "Ajustes de Telegram",
+            textColor = textColor,
             onClick = onNavigateToSettings
         )
 
-        // KronoGram Labs (Highlight)
+        // KronoGram Labs (PRO)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp)
-                .background(Color(0xFF0C192E), RoundedCornerShape(12.dp))
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
                 .clickable { onNavigateToKronoSettings() }
                 .padding(horizontal = 14.dp, vertical = 12.dp)
         ) {
@@ -255,21 +289,21 @@ fun KronoDrawer(
                 Icon(
                     imageVector = Icons.Default.RocketLaunch,
                     contentDescription = null,
-                    tint = ChronoCyanBright,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(14.dp))
                 Column {
                     Text(
                         text = "Ajustes de KronoGram",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = ChronoCyan
+                        color = MaterialTheme.colorScheme.primary
                     )
                     Text(
                         text = "Labs, pestañas, programador, PIN",
                         fontSize = 11.sp,
-                        color = Color(0xFF8BA2BF)
+                        color = Color.Gray
                     )
                 }
             }
@@ -278,17 +312,44 @@ fun KronoDrawer(
 }
 
 @Composable
+private fun DrawerThemePill(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.15f)
+            )
+            .clickable { onClick() }
+            .padding(vertical = 7.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (isSelected) Color.White else Color.Gray
+        )
+    }
+}
+
+@Composable
 private fun DrawerItem(
     icon: ImageVector,
     title: String,
-    iconTint: Color = Color.LightGray,
+    textColor: Color,
+    iconTint: Color = Color.Gray,
     onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = 20.dp, vertical = 13.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -301,7 +362,7 @@ private fun DrawerItem(
         Text(
             text = title,
             fontSize = 14.sp,
-            color = Color.White,
+            color = textColor,
             fontWeight = FontWeight.Medium
         )
     }

@@ -30,6 +30,12 @@ import com.example.ui.screens.onboarding.OnboardingWizardScreen
 import com.example.ui.screens.settings.FolderManagerScreen
 import com.example.ui.screens.settings.KronoSettingsScreen
 import com.example.ui.screens.settings.SettingsScreen
+import com.example.ui.screens.settings.telegram.ChatSettingsScreen
+import com.example.ui.screens.settings.telegram.DataStorageSettingsScreen
+import com.example.ui.screens.settings.telegram.DevicesSettingsScreen
+import com.example.ui.screens.settings.telegram.LanguageSettingsScreen
+import com.example.ui.screens.settings.telegram.NotificationsSettingsScreen
+import com.example.ui.screens.settings.telegram.PrivacySettingsScreen
 import com.example.ui.theme.KronoGramTheme
 import com.example.ui.theme.KronoThemeMode
 import kotlinx.coroutines.launch
@@ -65,6 +71,7 @@ class MainActivity : ComponentActivity() {
                     when (val dest = screenDestination) {
                         is ScreenDestination.Onboarding -> {
                             OnboardingWizardScreen(
+                                themeMode = settings.themeMode,
                                 onFinished = { selectedTabs ->
                                     viewModel.completeOnboarding(selectedTabs)
                                 }
@@ -78,7 +85,8 @@ class MainActivity : ComponentActivity() {
                             AuthScreen(
                                 engine = viewModel.engine,
                                 authState = authState,
-                                onLoginSuccess = {
+                                themeMode = settings.themeMode,
+                                onLoginSuccess = { phone ->
                                     viewModel.navigateTo(ScreenDestination.ChatList)
                                 }
                             )
@@ -112,10 +120,8 @@ class MainActivity : ComponentActivity() {
                                                     type = type
                                                 )
                                             },
-                                            onToggleAmoled = { checked ->
-                                                viewModel.setThemeMode(
-                                                    if (checked) KronoThemeMode.AMOLED_PURE else KronoThemeMode.DARK_NIGHT
-                                                )
+                                            onSelectTheme = { theme ->
+                                                viewModel.setThemeMode(theme)
                                             },
                                             onToggleGhostMode = { checked ->
                                                 viewModel.toggleGhostMode(checked)
@@ -191,9 +197,96 @@ class MainActivity : ComponentActivity() {
                                 onNavigateToKronoSettings = {
                                     viewModel.navigateTo(ScreenDestination.KronoSettings)
                                 },
+                                onNavigateToNotifications = {
+                                    viewModel.navigateTo(ScreenDestination.NotificationsSettings)
+                                },
+                                onNavigateToPrivacy = {
+                                    viewModel.navigateTo(ScreenDestination.PrivacySettings)
+                                },
+                                onNavigateToDataStorage = {
+                                    viewModel.navigateTo(ScreenDestination.DataStorageSettings)
+                                },
+                                onNavigateToChatSettings = {
+                                    viewModel.navigateTo(ScreenDestination.ChatSettings)
+                                },
+                                onNavigateToDevices = {
+                                    viewModel.navigateTo(ScreenDestination.DevicesSettings)
+                                },
+                                onNavigateToLanguage = {
+                                    viewModel.navigateTo(ScreenDestination.LanguageSettings)
+                                },
                                 onLogout = {
                                     viewModel.engine.logout()
                                     viewModel.navigateTo(ScreenDestination.Auth)
+                                }
+                            )
+                        }
+
+                        is ScreenDestination.NotificationsSettings -> {
+                            BackHandler { viewModel.navigateBack() }
+                            NotificationsSettingsScreen(
+                                settings = settings,
+                                onBack = { viewModel.navigateBack() },
+                                onToggleSetting = { type, enabled ->
+                                    viewModel.setNotificationSetting(type, enabled)
+                                }
+                            )
+                        }
+
+                        is ScreenDestination.PrivacySettings -> {
+                            BackHandler { viewModel.navigateBack() }
+                            PrivacySettingsScreen(
+                                settings = settings,
+                                onBack = { viewModel.navigateBack() },
+                                onSetPrivacy = { key, value ->
+                                    viewModel.setPrivacySetting(key, value)
+                                }
+                            )
+                        }
+
+                        is ScreenDestination.DataStorageSettings -> {
+                            BackHandler { viewModel.navigateBack() }
+                            DataStorageSettingsScreen(
+                                settings = settings,
+                                onBack = { viewModel.navigateBack() },
+                                onToggleAutoDownload = { type, enabled ->
+                                    viewModel.setAutoDownload(type, enabled)
+                                },
+                                onClearCache = {
+                                    viewModel.clearCache()
+                                }
+                            )
+                        }
+
+                        is ScreenDestination.ChatSettings -> {
+                            BackHandler { viewModel.navigateBack() }
+                            ChatSettingsScreen(
+                                settings = settings,
+                                onBack = { viewModel.navigateBack() },
+                                onSetThemeMode = { mode ->
+                                    viewModel.setThemeMode(mode)
+                                },
+                                onSetAppearance = { fontSize, cornerRadius ->
+                                    viewModel.setChatAppearance(fontSize, cornerRadius)
+                                }
+                            )
+                        }
+
+                        is ScreenDestination.DevicesSettings -> {
+                            BackHandler { viewModel.navigateBack() }
+                            DevicesSettingsScreen(
+                                settings = settings,
+                                onBack = { viewModel.navigateBack() }
+                            )
+                        }
+
+                        is ScreenDestination.LanguageSettings -> {
+                            BackHandler { viewModel.navigateBack() }
+                            LanguageSettingsScreen(
+                                settings = settings,
+                                onBack = { viewModel.navigateBack() },
+                                onSelectLanguage = { lang ->
+                                    viewModel.setLanguage(lang)
                                 }
                             )
                         }

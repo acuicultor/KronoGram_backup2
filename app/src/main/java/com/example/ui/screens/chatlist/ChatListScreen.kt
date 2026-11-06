@@ -1,11 +1,11 @@
 package com.example.ui.screens.chatlist
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,28 +19,23 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.VolumeOff
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRowDefaults
@@ -55,7 +50,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,7 +61,6 @@ import com.example.data.repository.KronoSettingsState
 import com.example.ui.components.NewChatDialog
 import com.example.ui.theme.AmoledBlack
 import com.example.ui.theme.ChronoCyan
-import com.example.ui.theme.ChronoCyanBright
 import com.example.ui.theme.ChronoOnlineGreen
 import com.example.ui.theme.KronoThemeMode
 import java.text.SimpleDateFormat
@@ -95,8 +88,10 @@ fun ChatListScreen(
     var showNewChatDialog by remember { mutableStateOf(false) }
     var dialogChatType by remember { mutableStateOf("USER") }
 
-    val isAmoled = settings.themeMode == KronoThemeMode.AMOLED_PURE
-    val bg = if (isAmoled) AmoledBlack else Color(0xFF0A0F1D)
+    val isLight = settings.themeMode == KronoThemeMode.LIGHT_DAY
+    val bg = if (isLight) MaterialTheme.colorScheme.background else if (settings.themeMode == KronoThemeMode.AMOLED_PURE) AmoledBlack else Color(0xFF0A0F1D)
+    val tabBg = if (isLight) MaterialTheme.colorScheme.surface else if (settings.themeMode == KronoThemeMode.AMOLED_PURE) AmoledBlack else Color(0xFF090E1A)
+    val dividerColor = if (isLight) Color(0xFFE2E8F0) else Color(0xFF131D2E)
 
     Box(
         modifier = Modifier
@@ -104,7 +99,7 @@ fun ChatListScreen(
             .background(bg)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Top App Bar
+            // Clean Elegant Top App Bar (Without the ugly stacked badge!)
             TopAppBar(
                 title = {
                     if (isSearchActive) {
@@ -129,18 +124,15 @@ fun ChatListScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Box(
-                                modifier = Modifier
-                                    .background(ChronoCyan.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    text = "37574376",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = ChronoCyan
-                                )
+                            if (settings.isGhostMode) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text("Fantasma", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                }
                             }
                         }
                     }
@@ -160,27 +152,26 @@ fun ChatListScreen(
                             isSearchActive = false
                             onSearchQueryChange("")
                         }) {
-                            Icon(imageVector = Icons.Default.Close, contentDescription = "Cerrar búsqueda", tint = Color.White)
+                            Icon(imageVector = Icons.Default.Close, contentDescription = "Cerrar", tint = Color.White)
                         }
                     } else {
                         IconButton(onClick = { isSearchActive = true }) {
                             Icon(imageVector = Icons.Default.Search, contentDescription = "Buscar", tint = Color.White)
                         }
 
-                        // App lock button if security enabled
                         if (settings.isBiometricLockEnabled || !settings.securityPin.isNullOrEmpty()) {
                             IconButton(onClick = onLockApp) {
-                                Icon(imageVector = Icons.Default.Lock, contentDescription = "Bloquear", tint = ChronoCyan)
+                                Icon(imageVector = Icons.Default.Lock, contentDescription = "Bloquear", tint = Color.White)
                             }
                         }
 
                         IconButton(onClick = onOpenKronoSettings) {
-                            Icon(imageVector = Icons.Default.RocketLaunch, contentDescription = "Ajustes KronoGram", tint = ChronoCyanBright)
+                            Icon(imageVector = Icons.Default.RocketLaunch, contentDescription = "Ajustes KronoGram", tint = Color.White)
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (isAmoled) AmoledBlack else Color(0xFF070B14)
+                    containerColor = MaterialTheme.colorScheme.primary
                 )
             )
 
@@ -190,25 +181,24 @@ fun ChatListScreen(
 
                 ScrollableTabRow(
                     selectedTabIndex = selectedIndex,
-                    containerColor = if (isAmoled) AmoledBlack else Color(0xFF090E1A),
-                    contentColor = ChronoCyan,
+                    containerColor = tabBg,
+                    contentColor = MaterialTheme.colorScheme.primary,
                     edgePadding = 12.dp,
                     indicator = { tabPositions ->
                         if (selectedIndex < tabPositions.size) {
                             TabRowDefaults.SecondaryIndicator(
                                 modifier = Modifier.tabIndicatorOffset(tabPositions[selectedIndex]),
-                                color = ChronoCyan,
+                                color = MaterialTheme.colorScheme.primary,
                                 height = 3.dp
                             )
                         }
                     },
                     divider = {
-                        HorizontalDivider(color = Color(0xFF162035), thickness = 0.8.dp)
+                        HorizontalDivider(color = dividerColor, thickness = 0.8.dp)
                     }
                 ) {
                     folders.forEachIndexed { index, folder ->
                         val isSelected = index == selectedIndex
-                        // Calculate unread count for this tab
                         val unreadCount = when (folder.filterType) {
                             "ALL" -> chats.sumOf { it.unreadCount }
                             "UNREAD" -> chats.filter { it.unreadCount > 0 }.sumOf { it.unreadCount }
@@ -231,7 +221,7 @@ fun ChatListScreen(
                                         text = folder.title,
                                         fontSize = 14.sp,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) ChronoCyan else Color(0xFF8B9BB4)
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray
                                     )
 
                                     if (unreadCount > 0) {
@@ -239,16 +229,16 @@ fun ChatListScreen(
                                         Box(
                                             modifier = Modifier
                                                 .background(
-                                                    if (isSelected) ChronoCyan else Color(0xFF1E2D4A),
+                                                    if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.4f),
                                                     CircleShape
                                                 )
-                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                                .padding(horizontal = 7.dp, vertical = 2.dp)
                                         ) {
                                             Text(
                                                 text = unreadCount.toString(),
                                                 fontSize = 10.sp,
                                                 fontWeight = FontWeight.Bold,
-                                                color = if (isSelected) AmoledBlack else Color.White
+                                                color = Color.White
                                             )
                                         }
                                     }
@@ -257,7 +247,6 @@ fun ChatListScreen(
                         )
                     }
 
-                    // Plus icon to customize folders
                     Tab(
                         selected = false,
                         onClick = onOpenFolderManager,
@@ -265,7 +254,7 @@ fun ChatListScreen(
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "Personalizar Pestañas",
-                                tint = Color(0xFF64748B),
+                                tint = Color.Gray,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -273,7 +262,7 @@ fun ChatListScreen(
                 }
             }
 
-            // Chat List or Empty State
+            // Chat List with generous bottom padding so FAB never covers the last item!
             if (chats.isEmpty()) {
                 Box(
                     modifier = Modifier
@@ -285,13 +274,13 @@ fun ChatListScreen(
                         Box(
                             modifier = Modifier
                                 .size(64.dp)
-                                .background(Color(0xFF0F172A), CircleShape),
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Shield,
                                 contentDescription = null,
-                                tint = ChronoCyan,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(32.dp)
                             )
                         }
@@ -300,13 +289,7 @@ fun ChatListScreen(
                             text = "No hay conversaciones en esta pestaña",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Color.White
-                        )
-                        Text(
-                            text = "Pulsa el botón flotante para iniciar un nuevo chat o cambiar de carpeta",
-                            fontSize = 12.sp,
-                            color = Color.Gray,
-                            modifier = Modifier.padding(top = 4.dp, start = 32.dp, end = 32.dp)
+                            color = if (isLight) MaterialTheme.colorScheme.onBackground else Color.White
                         )
                     }
                 }
@@ -314,15 +297,17 @@ fun ChatListScreen(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .weight(1f)
+                        .weight(1f),
+                    contentPadding = PaddingValues(bottom = 96.dp) // Ensures FAB never overlaps the last chat!
                 ) {
                     items(chats, key = { it.id }) { chat ->
                         ChatItemRow(
                             chat = chat,
+                            isLight = isLight,
                             onClick = { onChatClick(chat.id) }
                         )
                         HorizontalDivider(
-                            color = Color(0xFF131D2E),
+                            color = dividerColor,
                             thickness = 0.5.dp,
                             modifier = Modifier.padding(start = 76.dp)
                         )
@@ -337,8 +322,8 @@ fun ChatListScreen(
                 dialogChatType = "USER"
                 showNewChatDialog = true
             },
-            containerColor = ChronoCyan,
-            contentColor = AmoledBlack,
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = Color.White,
             shape = CircleShape,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -363,12 +348,16 @@ fun ChatListScreen(
 @Composable
 fun ChatItemRow(
     chat: ChatEntity,
+    isLight: Boolean,
     onClick: () -> Unit
 ) {
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     val formattedTime = remember(chat.lastMessageTimestamp) {
         timeFormat.format(Date(chat.lastMessageTimestamp))
     }
+
+    val titleColor = if (isLight) Color(0xFF1F2326) else Color.White
+    val lastMsgColor = if (isLight) Color(0xFF707579) else Color(0xFF94A3B8)
 
     val avatarColor = remember(chat.id) {
         when (chat.type) {
@@ -387,7 +376,7 @@ fun ChatItemRow(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Avatar with status indicator
+        // Avatar with online dot
         Box(modifier = Modifier.size(52.dp)) {
             Box(
                 modifier = Modifier
@@ -399,7 +388,7 @@ fun ChatItemRow(
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = "Secreto",
-                        tint = ChronoCyan,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
                     )
                 } else {
@@ -424,7 +413,7 @@ fun ChatItemRow(
 
         Spacer(modifier = Modifier.width(14.dp))
 
-        // Content
+        // Content - Balanced row with ample width for title without truncation!
         Column(modifier = Modifier.weight(1f)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -434,10 +423,8 @@ fun ChatItemRow(
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = null,
-                        tint = ChronoCyan,
-                        modifier = Modifier
-                            .size(14.dp)
-                            .padding(end = 4.dp)
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(14.dp).padding(end = 4.dp)
                     )
                 }
 
@@ -445,27 +432,27 @@ fun ChatItemRow(
                     text = chat.title,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Color.White,
+                    color = titleColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f, fill = false)
                 )
+
+                Spacer(modifier = Modifier.width(8.dp))
 
                 if (chat.isMuted) {
                     Icon(
                         imageVector = Icons.Default.VolumeOff,
                         contentDescription = "Silenciado",
                         tint = Color.Gray,
-                        modifier = Modifier
-                            .size(14.dp)
-                            .padding(end = 4.dp)
+                        modifier = Modifier.size(14.dp).padding(end = 4.dp)
                     )
                 }
 
                 Text(
                     text = formattedTime,
                     fontSize = 12.sp,
-                    color = if (chat.unreadCount > 0) ChronoCyan else Color.Gray
+                    color = if (chat.unreadCount > 0) MaterialTheme.colorScheme.primary else Color.Gray
                 )
             }
 
@@ -475,38 +462,37 @@ fun ChatItemRow(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Outgoing checkmarks
                 Text(
                     text = chat.lastMessage,
                     fontSize = 13.sp,
-                    color = Color(0xFF94A3B8),
+                    color = lastMsgColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
 
                 if (chat.isPinned) {
+                    Spacer(modifier = Modifier.width(6.dp))
                     Icon(
                         imageVector = Icons.Default.PushPin,
                         contentDescription = "Fijado",
                         tint = Color.Gray,
-                        modifier = Modifier
-                            .size(16.dp)
-                            .padding(end = 4.dp)
+                        modifier = Modifier.size(15.dp)
                     )
                 }
 
                 if (chat.unreadCount > 0) {
+                    Spacer(modifier = Modifier.width(6.dp))
                     Box(
                         modifier = Modifier
-                            .background(ChronoCyan, CircleShape)
+                            .background(MaterialTheme.colorScheme.primary, CircleShape)
                             .padding(horizontal = 7.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = chat.unreadCount.toString(),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = AmoledBlack
+                            color = Color.White
                         )
                     }
                 }
