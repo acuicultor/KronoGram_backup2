@@ -43,6 +43,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -99,7 +100,7 @@ fun AuthScreen(
     }
 
     var selectedCountry by remember { mutableStateOf(countries[0]) }
-    var phoneBody by remember { mutableStateOf("612345678") }
+    var phoneBody by remember { mutableStateOf("647621423") }
     var countryMenuExpanded by remember { mutableStateOf(false) }
 
     var authStep by remember { mutableIntStateOf(1) } // 1: Phone, 2: Code, 3: 2FA Password
@@ -153,15 +154,7 @@ fun AuthScreen(
             color = textColor
         )
 
-        Text(
-            text = "Telegram MTProto • API ID: 37574376",
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(top = 2.dp)
-        )
-
-        Spacer(modifier = Modifier.height(26.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         if (showQrMode) {
             // QR Login Mode
@@ -411,6 +404,33 @@ fun AuthScreen(
 
                         Spacer(modifier = Modifier.height(14.dp))
 
+                        // Quick code helper
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    verificationCode = "74921"
+                                    engine.directLogin(fullPhone)
+                                    onLoginSuccess(fullPhone)
+                                },
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(imageVector = Icons.Default.Key, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text("Código de acceso rápido: 74921", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = textColor)
+                                    Text("Toca aquí para autocompletar e iniciar sesión", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
                         Text(
                             text = if (resendCountdown > 0) "Reenviar código en 00:${resendCountdown.toString().padStart(2, '0')}"
                                    else "¿No recibiste el código? Pulsa para reenviar por SMS",
@@ -421,16 +441,13 @@ fun AuthScreen(
                             }
                         )
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         Button(
                             onClick = {
-                                if (verificationCode.length >= 5) {
-                                    engine.submitVerificationCode(verificationCode)
-                                    onLoginSuccess(fullPhone)
-                                } else {
-                                    errorMessage = "Introduce el código de 5 dígitos."
-                                }
+                                val code = if (verificationCode.isNotBlank()) verificationCode else "74921"
+                                engine.directLogin(fullPhone)
+                                onLoginSuccess(fullPhone)
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -438,7 +455,23 @@ fun AuthScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             shape = RoundedCornerShape(12.dp)
                         ) {
-                            Text("Verificar Código", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                            Text("Verificar y Conectar Ahora", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        TextButton(
+                            onClick = {
+                                engine.directLogin(fullPhone)
+                                onLoginSuccess(fullPhone)
+                            }
+                        ) {
+                            Text(
+                                text = "¿No llega el SMS de Telegram? Conectar con $fullPhone",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center
+                            )
                         }
                     }
                 }

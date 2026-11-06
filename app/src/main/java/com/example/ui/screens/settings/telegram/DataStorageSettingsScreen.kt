@@ -1,8 +1,7 @@
 package com.example.ui.screens.settings.telegram
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,19 +12,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CleaningServices
-import androidx.compose.material.icons.filled.CloudDownload
-import androidx.compose.material.icons.filled.PieChart
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -59,6 +59,7 @@ fun DataStorageSettingsScreen(
     settings: KronoSettingsState,
     onBack: () -> Unit,
     onToggleAutoDownload: (String, Boolean) -> Unit,
+    onSetStorageOptions: (String, String) -> Unit = { _, _ -> },
     onClearCache: () -> Unit
 ) {
     val isLight = settings.themeMode == KronoThemeMode.LIGHT_DAY
@@ -99,7 +100,7 @@ fun DataStorageSettingsScreen(
                 .padding(16.dp)
         ) {
             Text(
-                text = "USO DE DISCO",
+                text = "USO DE ALMACENAMIENTO",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
@@ -151,6 +152,62 @@ fun DataStorageSettingsScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(if (cleanedCacheNotice) "¡Caché liberada con éxito!" else "Limpiar Caché (${settings.cachedStorageMb} MB)")
                     }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(color = Color(0xFF1E2A3A).copy(alpha = 0.4f), thickness = 0.5.dp)
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Keep Media
+                    var durationMenu by remember { mutableStateOf(false) }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { durationMenu = true }
+                            .padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Conservar archivos multimedia", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = textColor)
+                            Text(settings.keepMediaDuration, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                        }
+                        DropdownMenu(expanded = durationMenu, onDismissRequest = { durationMenu = false }) {
+                            listOf("3 días", "1 semana", "1 mes", "Para siempre").forEach { dur ->
+                                DropdownMenuItem(
+                                    text = { Text(dur) },
+                                    onClick = {
+                                        onSetStorageOptions(dur, settings.maxCacheSize)
+                                        durationMenu = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // Max Cache
+                    var maxCacheMenu by remember { mutableStateOf(false) }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { maxCacheMenu = true }
+                            .padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Tamaño máximo de caché", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = textColor)
+                            Text(settings.maxCacheSize, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                        }
+                        DropdownMenu(expanded = maxCacheMenu, onDismissRequest = { maxCacheMenu = false }) {
+                            listOf("5 GB", "10 GB", "20 GB", "Sin límite").forEach { max ->
+                                DropdownMenuItem(
+                                    text = { Text(max) },
+                                    onClick = {
+                                        onSetStorageOptions(settings.keepMediaDuration, max)
+                                        maxCacheMenu = false
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
@@ -194,6 +251,42 @@ fun DataStorageSettingsScreen(
                         subtitle = "Desactivado para ahorrar datos",
                         checked = settings.autoDownloadRoaming,
                         onCheckedChange = { onToggleAutoDownload("roaming", it) },
+                        textColor = textColor
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = "REPRODUCCIÓN AUTOMÁTICA",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                letterSpacing = 0.5.sp,
+                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+            )
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column {
+                    StorageToggleRow(
+                        title = "GIFs",
+                        subtitle = "Reproducir GIFs automáticamente",
+                        checked = settings.autoPlayGifs,
+                        onCheckedChange = { onToggleAutoDownload("gifs", it) },
+                        textColor = textColor
+                    )
+                    HorizontalDivider(color = Color(0xFF1E2A3A).copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    StorageToggleRow(
+                        title = "Vídeos",
+                        subtitle = "Reproducir vídeos en segundo plano",
+                        checked = settings.autoPlayVideos,
+                        onCheckedChange = { onToggleAutoDownload("videos", it) },
                         textColor = textColor
                     )
                 }

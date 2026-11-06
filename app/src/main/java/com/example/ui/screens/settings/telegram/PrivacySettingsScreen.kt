@@ -17,14 +17,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
-import androidx.compose.material.icons.filled.Block
-import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -64,7 +58,7 @@ fun PrivacySettingsScreen(
     val cardBg = if (isLight) MaterialTheme.colorScheme.surface else Color(0xFF0C1322)
     val textColor = if (isLight) MaterialTheme.colorScheme.onSurface else Color.White
 
-    var showDialogFor by remember { mutableStateOf<String?>(null) } // "lastSeen" or "phone"
+    var showDialogFor by remember { mutableStateOf<String?>(null) } // "lastSeen", "phone", "groupInvite", "profilePhoto", "forward", "selfDestruct"
 
     Column(
         modifier = Modifier
@@ -129,19 +123,51 @@ fun PrivacySettingsScreen(
 
                     PrivacyOptionRow(
                         title = "Fotos de perfil",
-                        value = "Todos",
-                        onClick = {},
+                        value = settings.profilePhotoPrivacy,
+                        onClick = { showDialogFor = "profilePhoto" },
                         textColor = textColor
                     )
                     HorizontalDivider(color = Color(0xFF1E2A3A).copy(alpha = 0.4f), thickness = 0.5.dp)
 
                     PrivacyOptionRow(
                         title = "Mensajes reenviados",
-                        value = "Todos",
-                        onClick = {},
+                        value = settings.forwardPrivacy,
+                        onClick = { showDialogFor = "forward" },
+                        textColor = textColor
+                    )
+                    HorizontalDivider(color = Color(0xFF1E2A3A).copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    PrivacyOptionRow(
+                        title = "Grupos y canales",
+                        value = settings.groupInvitePrivacy,
+                        onClick = { showDialogFor = "groupInvite" },
                         textColor = textColor
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = "AUTODESTRUCCIÓN DE CUENTA",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                letterSpacing = 0.5.sp,
+                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+            )
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                PrivacyOptionRow(
+                    title = "Si estoy fuera",
+                    value = settings.accountSelfDestructPeriod,
+                    onClick = { showDialogFor = "selfDestruct" },
+                    textColor = textColor
+                )
             }
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -163,7 +189,7 @@ fun PrivacySettingsScreen(
                 Column {
                     PrivacyOptionRow(
                         title = "Código de bloqueo",
-                        value = if (settings.securityPin != null) "Activado" else "Desactivado",
+                        value = if (settings.securityPin != null) "Activado (PIN 4 dígitos)" else "Desactivado",
                         onClick = {},
                         textColor = textColor
                     )
@@ -190,13 +216,33 @@ fun PrivacySettingsScreen(
         // Privacy selection dialog
         if (showDialogFor != null) {
             val key = showDialogFor!!
-            val title = if (key == "phone") "¿Quién puede ver mi número?" else "¿Quién puede ver mi última vez?"
-            val currentValue = if (key == "phone") settings.phoneNumberPrivacy else settings.lastSeenPrivacy
-            val options = listOf("Todos", "Mis contactos", "Nadie")
+            val title = when (key) {
+                "phone" -> "¿Quién puede ver mi número?"
+                "lastSeen" -> "¿Quién puede ver mi última vez?"
+                "profilePhoto" -> "¿Quién puede ver mi foto de perfil?"
+                "forward" -> "¿Quién puede añadir un enlace a mi cuenta al reenviar mis mensajes?"
+                "groupInvite" -> "¿Quién puede añadirme a grupos y canales?"
+                "selfDestruct" -> "Eliminar mi cuenta si estoy fuera por"
+                else -> "Configuración de privacidad"
+            }
+            val currentValue = when (key) {
+                "phone" -> settings.phoneNumberPrivacy
+                "lastSeen" -> settings.lastSeenPrivacy
+                "profilePhoto" -> settings.profilePhotoPrivacy
+                "forward" -> settings.forwardPrivacy
+                "groupInvite" -> settings.groupInvitePrivacy
+                "selfDestruct" -> settings.accountSelfDestructPeriod
+                else -> "Todos"
+            }
+            val options = if (key == "selfDestruct") {
+                listOf("1 mes", "3 meses", "6 meses", "1 año")
+            } else {
+                listOf("Todos", "Mis contactos", "Nadie")
+            }
 
             AlertDialog(
                 onDismissRequest = { showDialogFor = null },
-                title = { Text(title, fontWeight = FontWeight.Bold, color = textColor) },
+                title = { Text(title, fontWeight = FontWeight.Bold, color = textColor, fontSize = 16.sp) },
                 text = {
                     Column {
                         options.forEach { option ->

@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SentimentSatisfiedAlt
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -214,7 +215,8 @@ fun ChatDetailScreen(
                         message = message,
                         isLight = isLight,
                         fontSize = settings.chatFontSize,
-                        cornerRadius = settings.bubbleCornerRadius
+                        cornerRadius = settings.bubbleCornerRadius,
+                        settings = settings
                     )
                 }
             }
@@ -311,7 +313,8 @@ fun MessageBubble(
     message: MessageEntity,
     isLight: Boolean,
     fontSize: Int,
-    cornerRadius: Int
+    cornerRadius: Int,
+    settings: KronoSettingsState
 ) {
     val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     val formattedTime = remember(message.timestamp) {
@@ -361,6 +364,8 @@ fun MessageBubble(
                 )
                 .padding(horizontal = 14.dp, vertical = 9.dp)
         ) {
+            var isTranslated by remember { mutableStateOf(false) }
+
             Column {
                 if (!isOut) {
                     Text(
@@ -378,12 +383,35 @@ fun MessageBubble(
                     color = textColor
                 )
 
+                if (isTranslated) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Traducido (${settings.translationTargetLang} • ${settings.translationProvider}):\n${message.text}",
+                        fontSize = (fontSize - 2).coerceAtLeast(11).sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(3.dp))
 
                 Row(
                     modifier = Modifier.align(Alignment.End),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    if (settings.enableChatTranslation) {
+                        Icon(
+                            imageVector = Icons.Default.Translate,
+                            contentDescription = "Traducir",
+                            tint = if (isTranslated) MaterialTheme.colorScheme.primary else Color.Gray,
+                            modifier = Modifier
+                                .size(14.dp)
+                                .clickable { isTranslated = !isTranslated }
+                                .padding(end = 2.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+
                     if (message.autoDestructSeconds != null && message.autoDestructSeconds > 0) {
                         Icon(
                             imageVector = Icons.Default.Timer,

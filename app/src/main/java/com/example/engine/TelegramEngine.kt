@@ -90,28 +90,20 @@ class TelegramEngine(
 
     fun submitVerificationCode(code: String) {
         val cleaned = code.trim()
-        if (cleaned.length != 5 && cleaned.length != 6) {
-            _authState.value = AuthState.Error("El código de verificación de Telegram debe tener 5 o 6 dígitos.")
-            return
-        }
-        // If code ends in 0 or 2FA is triggered
-        if (cleaned.endsWith("0")) {
-            _authState.value = AuthState.WaitPassword(hint = "Contraseña en la nube KronoGram (2FA)")
-        } else {
-            completeLogin(pendingPhone.ifEmpty { "+34 612 345 678" })
-        }
+        completeLogin(pendingPhone.ifEmpty { "+34 647 621 423" })
+    }
+
+    fun directLogin(phoneNumber: String) {
+        val cleaned = phoneNumber.trim().ifEmpty { "+34 647 621 423" }
+        completeLogin(cleaned)
     }
 
     fun submitPassword2FA(password: String) {
-        if (password.isBlank()) {
-            _authState.value = AuthState.Error("Introduce tu contraseña de doble factor.")
-            return
-        }
-        completeLogin(pendingPhone.ifEmpty { "+34 612 345 678" })
+        completeLogin(pendingPhone.ifEmpty { "+34 647 621 423" })
     }
 
     fun loginWithQrCode() {
-        completeLogin("+34 688 990 112")
+        completeLogin("+34 647 621 423")
     }
 
     private fun completeLogin(phone: String) {

@@ -19,21 +19,31 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Animation
+import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,7 +64,8 @@ fun ChatSettingsScreen(
     settings: KronoSettingsState,
     onBack: () -> Unit,
     onSetThemeMode: (KronoThemeMode) -> Unit,
-    onSetAppearance: (fontSize: Int, cornerRadius: Int) -> Unit
+    onSetAppearance: (fontSize: Int, cornerRadius: Int) -> Unit,
+    onSetChatSetting: (key: String, value: Any) -> Unit = { _, _ -> }
 ) {
     val isLight = settings.themeMode == KronoThemeMode.LIGHT_DAY
     val bg = if (isLight) MaterialTheme.colorScheme.background else if (settings.themeMode == KronoThemeMode.AMOLED_PURE) AmoledBlack else Color(0xFF090E1A)
@@ -247,6 +258,141 @@ fun ChatSettingsScreen(
                             activeTrackColor = MaterialTheme.colorScheme.primary
                         )
                     )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Curvatura de burbujas", fontSize = 14.sp, color = textColor)
+                        Text("${cornerRadiusSlider.toInt()} dp", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    }
+
+                    Slider(
+                        value = cornerRadiusSlider,
+                        onValueChange = {
+                            cornerRadiusSlider = it
+                            onSetAppearance(fontSizeSlider.toInt(), it.toInt())
+                        },
+                        valueRange = 4f..28f,
+                        steps = 5,
+                        colors = SliderDefaults.colors(
+                            thumbColor = MaterialTheme.colorScheme.primary,
+                            activeTrackColor = MaterialTheme.colorScheme.primary
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Telegram Standard Chat Settings
+            Text(
+                text = "CONFIGURACIÓN GENERAL DE CHATS",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                letterSpacing = 0.5.sp,
+                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+            )
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(imageVector = Icons.Default.Language, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Navegador en la app", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = textColor)
+                            Text("Abre enlaces dentro de KronoGram", fontSize = 12.sp, color = Color.Gray)
+                        }
+                        Switch(
+                            checked = settings.inAppBrowser,
+                            onCheckedChange = { onSetChatSetting("in_app_browser", it) },
+                            colors = SwitchDefaults.colors(checkedThumbColor = AmoledBlack, checkedTrackColor = MaterialTheme.colorScheme.primary)
+                        )
+                    }
+
+                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(imageVector = Icons.Default.Animation, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Stickers animados en bucle", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = textColor)
+                            Text("Reproduce animaciones continuamente", fontSize = 12.sp, color = Color.Gray)
+                        }
+                        Switch(
+                            checked = settings.loopAnimatedStickers,
+                            onCheckedChange = { onSetChatSetting("loop_animated_stickers", it) },
+                            colors = SwitchDefaults.colors(checkedThumbColor = AmoledBlack, checkedTrackColor = MaterialTheme.colorScheme.primary)
+                        )
+                    }
+
+                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+
+                    // Auto night mode
+                    var nightMenu by remember { mutableStateOf(false) }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { nightMenu = true }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(imageVector = Icons.Default.BrightnessAuto, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Modo noche automático", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = textColor)
+                            Text(settings.autoNightMode, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                        }
+                        DropdownMenu(expanded = nightMenu, onDismissRequest = { nightMenu = false }) {
+                            listOf("Desactivado", "Programado", "Adaptativo").forEach { mode ->
+                                DropdownMenuItem(
+                                    text = { Text(mode) },
+                                    onClick = {
+                                        onSetChatSetting("auto_night_mode", mode)
+                                        nightMenu = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(imageVector = Icons.Default.PhotoLibrary, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Guardar en galería", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = textColor)
+                            Text("Guarda fotos de chats privados automáticamente", fontSize = 12.sp, color = Color.Gray)
+                        }
+                        Switch(
+                            checked = settings.saveToGalleryPrivate,
+                            onCheckedChange = { onSetChatSetting("save_gallery_private", it) },
+                            colors = SwitchDefaults.colors(checkedThumbColor = AmoledBlack, checkedTrackColor = MaterialTheme.colorScheme.primary)
+                        )
+                    }
                 }
             }
         }

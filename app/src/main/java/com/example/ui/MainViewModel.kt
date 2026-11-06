@@ -250,6 +250,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         preferencesRepo.setLanguage(lang)
     }
 
+    fun setKronoFeature(key: String, value: Any) {
+        preferencesRepo.setKronoFeature(key, value)
+    }
+
+    fun setNotificationBadgeType(type: String) {
+        preferencesRepo.setNotificationBadgeType(type)
+    }
+
+    fun setDataStorageOptions(keepDuration: String, maxCache: String) {
+        preferencesRepo.setDataStorageOptions(keepDuration, maxCache)
+    }
+
+    fun setChatSetting(key: String, value: Any) {
+        preferencesRepo.setChatSetting(key, value)
+    }
+
     fun clearCache() {
         preferencesRepo.clearCache()
     }

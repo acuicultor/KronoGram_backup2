@@ -1,6 +1,7 @@
 package com.example.ui.screens.settings.telegram
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,12 +15,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Forum
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -31,6 +30,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -39,7 +42,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.repository.KronoSettingsState
 import com.example.ui.theme.AmoledBlack
-import com.example.ui.theme.ChronoCyan
 import com.example.ui.theme.KronoThemeMode
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,7 +49,8 @@ import com.example.ui.theme.KronoThemeMode
 fun NotificationsSettingsScreen(
     settings: KronoSettingsState,
     onBack: () -> Unit,
-    onToggleSetting: (String, Boolean) -> Unit
+    onToggleSetting: (String, Boolean) -> Unit,
+    onSetBadgeType: (String) -> Unit = {}
 ) {
     val isLight = settings.themeMode == KronoThemeMode.LIGHT_DAY
     val bg = if (isLight) MaterialTheme.colorScheme.background else if (settings.themeMode == KronoThemeMode.AMOLED_PURE) AmoledBlack else Color(0xFF090E1A)
@@ -65,7 +68,7 @@ fun NotificationsSettingsScreen(
                     text = "Notificaciones y sonidos",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (isLight) Color.White else Color.White
+                    color = Color.White
                 )
             },
             navigationIcon = {
@@ -130,6 +133,60 @@ fun NotificationsSettingsScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
+                text = "CONTADOR EN ICONO (BADGE)",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                letterSpacing = 0.5.sp,
+                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+            )
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column {
+                    var badgeMenu by remember { mutableStateOf(false) }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { badgeMenu = true }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Modo de conteo en globo", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = textColor)
+                            Text(settings.badgeCounterType, fontSize = 12.sp, color = MaterialTheme.colorScheme.primary)
+                        }
+                        DropdownMenu(expanded = badgeMenu, onDismissRequest = { badgeMenu = false }) {
+                            listOf("Mensajes no leídos", "Chats no leídos").forEach { type ->
+                                DropdownMenuItem(
+                                    text = { Text(type) },
+                                    onClick = {
+                                        onSetBadgeType(type)
+                                        badgeMenu = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(color = Color(0xFF1E2A3A).copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    NotificationToggleRow(
+                        title = "Incluir chats silenciados",
+                        subtitle = "Suma los mensajes de canales o grupos silenciados en el icono",
+                        checked = settings.badgeIncludeMuted,
+                        onCheckedChange = { onToggleSetting("badgeMuted", it) },
+                        textColor = textColor
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
                 text = "AJUSTES EN LA APLICACIÓN",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
@@ -149,6 +206,15 @@ fun NotificationsSettingsScreen(
                         subtitle = "Reproducir sonidos al enviar y recibir",
                         checked = settings.inAppSounds,
                         onCheckedChange = { onToggleSetting("sounds", it) },
+                        textColor = textColor
+                    )
+                    HorizontalDivider(color = Color(0xFF1E2A3A).copy(alpha = 0.4f), thickness = 0.5.dp)
+
+                    NotificationToggleRow(
+                        title = "Efectos de sonido",
+                        subtitle = "Sonidos al reaccionar o abrir archivos",
+                        checked = settings.inAppSoundsEffects,
+                        onCheckedChange = { onToggleSetting("soundEffects", it) },
                         textColor = textColor
                     )
                     HorizontalDivider(color = Color(0xFF1E2A3A).copy(alpha = 0.4f), thickness = 0.5.dp)

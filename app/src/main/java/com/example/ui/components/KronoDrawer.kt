@@ -136,8 +136,9 @@ fun KronoDrawer(
                     color = Color.White
                 )
 
+                val displayPhone = if (settings.hidePhoneInDrawer) "Número protegido" else settings.accountPhone
                 Text(
-                    text = "${settings.accountPhone} • @${settings.accountUsername}",
+                    text = "$displayPhone • @${settings.accountUsername}",
                     fontSize = 13.sp,
                     color = Color.White.copy(alpha = 0.8f)
                 )

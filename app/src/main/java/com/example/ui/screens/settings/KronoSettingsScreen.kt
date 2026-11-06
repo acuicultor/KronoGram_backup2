@@ -21,24 +21,41 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.automirrored.filled.Forward
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.FontDownload
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Keyboard
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Mood
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.PauseCircle
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -55,6 +72,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -74,13 +92,18 @@ fun KronoSettingsScreen(
     onSetThemeMode: (KronoThemeMode) -> Unit,
     onToggleBiometric: (Boolean) -> Unit,
     onSetSecurityPin: (String?) -> Unit,
+    onSetKronoFeature: (String, Any) -> Unit,
     onOpenFolderManager: () -> Unit
 ) {
     var showPinDialog by remember { mutableStateOf(false) }
     var inputPin by remember { mutableStateOf("") }
 
+    val isLight = settings.themeMode == KronoThemeMode.LIGHT_DAY
     val isAmoled = settings.themeMode == KronoThemeMode.AMOLED_PURE
-    val bg = if (isAmoled) AmoledBlack else Color(0xFF090E1A)
+    val bg = if (isLight) MaterialTheme.colorScheme.background else if (isAmoled) AmoledBlack else Color(0xFF090E1A)
+    val cardBg = if (isLight) MaterialTheme.colorScheme.surface else Color(0xFF0C1322)
+    val textColor = if (isLight) MaterialTheme.colorScheme.onSurface else Color.White
+    val topBarBg = if (isLight) MaterialTheme.colorScheme.primary else if (isAmoled) AmoledBlack else Color(0xFF070B14)
 
     Column(
         modifier = Modifier
@@ -102,7 +125,7 @@ fun KronoSettingsScreen(
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = if (isAmoled) AmoledBlack else Color(0xFF070B14)
+                containerColor = topBarBg
             )
         )
 
@@ -112,158 +135,379 @@ fun KronoSettingsScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            // 1. GHOST MODE & PRIVACY SECTION
-            Text(
-                text = "MODO FANTASMA & PRIVACIDAD",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = ChronoCyan,
-                letterSpacing = 1.sp,
-                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
-            )
-
+            // 1. TRADUCCIÓN INTEGRADA
+            SectionHeader(title = "TRADUCCIÓN INTEGRADA (KRONO TRANSLATE)")
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF0C1322)),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column {
+                    // Translation Provider Selector
+                    var providerMenu by remember { mutableStateOf(false) }
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clickable { providerMenu = true }
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(imageVector = Icons.Default.VisibilityOff, contentDescription = null, tint = ChronoCyan)
+                        Icon(imageVector = Icons.Default.Translate, contentDescription = null, tint = ChronoCyan)
                         Spacer(modifier = Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Modo Fantasma Completo", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                            Text("Lee mensajes sin enviar marcas de lectura ni confirmar recibido", fontSize = 12.sp, color = Color.Gray)
+                            Text("Proveedor de Traducción", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = textColor)
+                            Text(settings.translationProvider, fontSize = 12.sp, color = ChronoCyan)
                         }
-                        Switch(
-                            checked = settings.isGhostMode,
-                            onCheckedChange = onToggleGhostMode,
-                            colors = SwitchDefaults.colors(checkedThumbColor = AmoledBlack, checkedTrackColor = ChronoCyan)
-                        )
+                        DropdownMenu(expanded = providerMenu, onDismissRequest = { providerMenu = false }) {
+                            listOf("Google Translate", "DeepL", "Motor Local Krono").forEach { prov ->
+                                DropdownMenuItem(
+                                    text = { Text(prov) },
+                                    onClick = {
+                                        onSetKronoFeature("trans_provider", prov)
+                                        providerMenu = false
+                                    }
+                                )
+                            }
+                        }
                     }
 
                     HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
 
+                    // Target Language
+                    var langMenu by remember { mutableStateOf(false) }
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clickable { langMenu = true }
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(imageVector = Icons.Default.Security, contentDescription = null, tint = ChronoCyan)
+                        Icon(imageVector = Icons.Default.Language, contentDescription = null, tint = ChronoCyan)
                         Spacer(modifier = Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Ocultar Estado En Línea", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                            Text("Nunca actualiza tu presencia ni última hora de conexión", fontSize = 12.sp, color = Color.Gray)
+                            Text("Idioma Destino", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = textColor)
+                            Text(settings.translationTargetLang, fontSize = 12.sp, color = ChronoCyan)
                         }
-                        Switch(
-                            checked = settings.isHideOnlineStatus,
-                            onCheckedChange = onToggleHideOnline,
-                            colors = SwitchDefaults.colors(checkedThumbColor = AmoledBlack, checkedTrackColor = ChronoCyan)
-                        )
+                        DropdownMenu(expanded = langMenu, onDismissRequest = { langMenu = false }) {
+                            listOf("Español", "English", "Français", "Deutsch", "Italiano", "Português", "Русский").forEach { lang ->
+                                DropdownMenuItem(
+                                    text = { Text(lang) },
+                                    onClick = {
+                                        onSetKronoFeature("trans_target_lang", lang)
+                                        langMenu = false
+                                    }
+                                )
+                            }
+                        }
                     }
-                }
-            }
 
-            Spacer(modifier = Modifier.height(20.dp))
+                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
 
-            // 2. THEME & AMOLED MODE
-            Text(
-                text = "TEMA VISUAL & AMOLED PURO",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = ChronoCyan,
-                letterSpacing = 1.sp,
-                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
-            )
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF0C1322)),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Selecciona el estilo de interfaz",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.White
+                    KronoSwitchRow(
+                        icon = Icons.Default.Tune,
+                        title = "Botón de traducir en mensajes",
+                        subtitle = "Muestra icono de traducción instantánea en cada burbuja",
+                        checked = settings.enableChatTranslation,
+                        onCheckedChange = { onSetKronoFeature("trans_enable_chat", it) },
+                        textColor = textColor
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        ThemeOptionBox(
-                            title = "AMOLED Puro",
-                            subtitle = "#000000",
-                            isSelected = settings.themeMode == KronoThemeMode.AMOLED_PURE,
-                            onClick = { onSetThemeMode(KronoThemeMode.AMOLED_PURE) },
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        ThemeOptionBox(
-                            title = "Noche Cyber",
-                            subtitle = "Obsidiana",
-                            isSelected = settings.themeMode == KronoThemeMode.DARK_NIGHT,
-                            onClick = { onSetThemeMode(KronoThemeMode.DARK_NIGHT) },
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        ThemeOptionBox(
-                            title = "Modo Día",
-                            subtitle = "Telegram Light",
-                            isSelected = settings.themeMode == KronoThemeMode.LIGHT_DAY,
-                            onClick = { onSetThemeMode(KronoThemeMode.LIGHT_DAY) },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    KronoSwitchRow(
+                        icon = Icons.Default.Translate,
+                        title = "Traducir antes de enviar",
+                        subtitle = "Traduce el texto escrito al idioma seleccionado antes de mandarlo",
+                        checked = settings.translateBeforeSend,
+                        onCheckedChange = { onSetKronoFeature("trans_before_send", it) },
+                        textColor = textColor
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 3. BIOMETRIC LOCK & PIN
-            Text(
-                text = "SEGURIDAD & BLOQUEO DE LA APLICACIÓN",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = ChronoCyan,
-                letterSpacing = 1.sp,
-                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
-            )
-
+            // 2. REENVÍO Y MENSAJERÍA AVANZADA
+            SectionHeader(title = "REENVÍO Y MENSAJERÍA AVANZADA")
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF0C1322)),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column {
+                    KronoSwitchRow(
+                        icon = Icons.AutoMirrored.Filled.Forward,
+                        title = "Reenviar sin cita (Anónimo)",
+                        subtitle = "Elimina automáticamente el autor y cabecera al reenviar mensajes",
+                        checked = settings.forwardWithoutQuote,
+                        onCheckedChange = { onSetKronoFeature("fwd_no_quote", it) },
+                        textColor = textColor
+                    )
+
+                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+
+                    KronoSwitchRow(
+                        icon = Icons.Default.TouchApp,
+                        title = "Reenvío con un solo toque",
+                        subtitle = "Envía rápidamente a Mensajes Guardados con pulsación directa",
+                        checked = settings.oneTapForward,
+                        onCheckedChange = { onSetKronoFeature("fwd_one_tap", it) },
+                        textColor = textColor
+                    )
+
+                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+
+                    // Double Tap Action
+                    var doubleTapMenu by remember { mutableStateOf(false) }
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .clickable { doubleTapMenu = true }
                             .padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(imageVector = Icons.Default.Fingerprint, contentDescription = null, tint = ChronoCyan)
+                        Icon(imageVector = Icons.Default.TouchApp, contentDescription = null, tint = ChronoCyan)
                         Spacer(modifier = Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Bloqueo Biométrico", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                            Text("Desbloquea con huella dactilar al abrir la app", fontSize = 12.sp, color = Color.Gray)
+                            Text("Acción de doble toque en mensajes", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = textColor)
+                            Text(settings.doubleTapAction, fontSize = 12.sp, color = ChronoCyan)
                         }
-                        Switch(
-                            checked = settings.isBiometricLockEnabled,
-                            onCheckedChange = onToggleBiometric,
-                            colors = SwitchDefaults.colors(checkedThumbColor = AmoledBlack, checkedTrackColor = ChronoCyan)
-                        )
+                        DropdownMenu(expanded = doubleTapMenu, onDismissRequest = { doubleTapMenu = false }) {
+                            listOf("Responder", "Traducir", "Copiar texto", "Reaccionar").forEach { act ->
+                                DropdownMenuItem(
+                                    text = { Text(act) },
+                                    onClick = {
+                                        onSetKronoFeature("double_tap_action", act)
+                                        doubleTapMenu = false
+                                    }
+                                )
+                            }
+                        }
                     }
+
+                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+
+                    KronoSwitchRow(
+                        icon = Icons.Default.Mic,
+                        title = "Transcripción de voz a texto",
+                        subtitle = "Permite transcribir notas de voz recibidas sin coste",
+                        checked = settings.voiceToTextEnabled,
+                        onCheckedChange = { onSetKronoFeature("voice_to_text", it) },
+                        textColor = textColor
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // 3. PERSONALIZACIÓN DE INTERFAZ & SISTEMA
+            SectionHeader(title = "PERSONALIZACIÓN DE INTERFAZ & SISTEMA")
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column {
+                    KronoSwitchRow(
+                        icon = Icons.Default.Mood,
+                        title = "Usar emojis del sistema",
+                        subtitle = "Muestra los emojis estándar de tu versión de Android",
+                        checked = settings.useSystemEmojis,
+                        onCheckedChange = { onSetKronoFeature("use_system_emojis", it) },
+                        textColor = textColor
+                    )
+
+                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+
+                    KronoSwitchRow(
+                        icon = Icons.Default.FontDownload,
+                        title = "Usar tipografía del sistema",
+                        subtitle = "Aplica la fuente instalada en tu dispositivo",
+                        checked = settings.useSystemFonts,
+                        onCheckedChange = { onSetKronoFeature("use_system_fonts", it) },
+                        textColor = textColor
+                    )
+
+                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+
+                    KronoSwitchRow(
+                        icon = Icons.Default.Keyboard,
+                        title = "Ocultar teclado al hacer scroll",
+                        subtitle = "Baja el teclado suavemente al desplazarte por la lista de mensajes",
+                        checked = settings.hideKeyboardOnScroll,
+                        onCheckedChange = { onSetKronoFeature("hide_keyboard_scroll", it) },
+                        textColor = textColor
+                    )
+
+                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+
+                    KronoSwitchRow(
+                        icon = Icons.Default.Phone,
+                        title = "Ocultar número en menú lateral",
+                        subtitle = "Evita mostrar tu número de teléfono en la cabecera del drawer",
+                        checked = settings.hidePhoneInDrawer,
+                        onCheckedChange = { onSetKronoFeature("hide_phone_drawer", it) },
+                        textColor = textColor
+                    )
+
+                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+
+                    KronoSwitchRow(
+                        icon = Icons.Default.Mood,
+                        title = "Avatar como fondo de cabecera",
+                        subtitle = "Usa tu foto de perfil difuminada en la parte superior del menú lateral",
+                        checked = settings.avatarDrawerBackground,
+                        onCheckedChange = { onSetKronoFeature("avatar_drawer_bg", it) },
+                        textColor = textColor
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // 4. CONTROL DE MULTIMEDIA Y STICKERS
+            SectionHeader(title = "MULTIMEDIA Y STICKERS")
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column {
+                    // Sticker Size
+                    var stickerMenu by remember { mutableStateOf(false) }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { stickerMenu = true }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(imageVector = Icons.Default.Mood, contentDescription = null, tint = ChronoCyan)
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Tamaño de Stickers en Chat", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = textColor)
+                            Text(settings.stickerSize, fontSize = 12.sp, color = ChronoCyan)
+                        }
+                        DropdownMenu(expanded = stickerMenu, onDismissRequest = { stickerMenu = false }) {
+                            listOf("Pequeño", "Normal", "Grande").forEach { size ->
+                                DropdownMenuItem(
+                                    text = { Text(size) },
+                                    onClick = {
+                                        onSetKronoFeature("sticker_size", size)
+                                        stickerMenu = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+
+                    KronoSwitchRow(
+                        icon = Icons.Default.PauseCircle,
+                        title = "Pausa automática de vídeos",
+                        subtitle = "Pausa la reproducción al pasar la aplicación a segundo plano",
+                        checked = settings.autoPauseVideos,
+                        onCheckedChange = { onSetKronoFeature("auto_pause_videos", it) },
+                        textColor = textColor
+                    )
+
+                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+
+                    KronoSwitchRow(
+                        icon = Icons.Default.Star,
+                        title = "Stickers favoritos ilimitados",
+                        subtitle = "Elimina el límite estándar de stickers destacados",
+                        checked = settings.unlimitedFavoriteStickers,
+                        onCheckedChange = { onSetKronoFeature("unlimited_fav_stickers", it) },
+                        textColor = textColor
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // 5. PRIVACIDAD AVANZADA Y ANTI-ACCIDENTES
+            SectionHeader(title = "PRIVACIDAD AVANZADA Y ANTI-ACCIDENTES")
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column {
+                    KronoSwitchRow(
+                        icon = Icons.Default.Call,
+                        title = "Confirmación antes de llamar",
+                        subtitle = "Evita realizar llamadas o videollamadas involuntarias por pulsación accidental",
+                        checked = settings.confirmBeforeCall,
+                        onCheckedChange = { onSetKronoFeature("confirm_call", it) },
+                        textColor = textColor
+                    )
+
+                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+
+                    KronoSwitchRow(
+                        icon = Icons.Default.VisibilityOff,
+                        title = "Ignorar usuarios bloqueados en grupos",
+                        subtitle = "Oculta totalmente mensajes de contactos que tengas bloqueados en chats comunes",
+                        checked = settings.ignoreBlockedUsersInGroups,
+                        onCheckedChange = { onSetKronoFeature("ignore_blocked_groups", it) },
+                        textColor = textColor
+                    )
+
+                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+
+                    KronoSwitchRow(
+                        icon = Icons.Default.History,
+                        title = "Registro local de mensajes editados",
+                        subtitle = "Guarda el contenido original de un mensaje antes de su edición para consulta",
+                        checked = settings.localEditHistory,
+                        onCheckedChange = { onSetKronoFeature("local_edit_history", it) },
+                        textColor = textColor
+                    )
+
+                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+
+                    KronoSwitchRow(
+                        icon = Icons.Default.VisibilityOff,
+                        title = "Modo Fantasma Completo",
+                        subtitle = "Lee mensajes sin enviar marcas de lectura ni confirmar recibido",
+                        checked = settings.isGhostMode,
+                        onCheckedChange = onToggleGhostMode,
+                        textColor = textColor
+                    )
+
+                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+
+                    KronoSwitchRow(
+                        icon = Icons.Default.Security,
+                        title = "Ocultar Estado En Línea",
+                        subtitle = "Nunca actualiza tu presencia ni última hora de conexión",
+                        checked = settings.isHideOnlineStatus,
+                        onCheckedChange = onToggleHideOnline,
+                        textColor = textColor
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // 6. BLOQUEO BIOMÉTRICO Y PIN
+            SectionHeader(title = "SEGURIDAD & BLOQUEO")
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column {
+                    KronoSwitchRow(
+                        icon = Icons.Default.Fingerprint,
+                        title = "Bloqueo Biométrico",
+                        subtitle = "Desbloquea con huella dactilar al abrir la app",
+                        checked = settings.isBiometricLockEnabled,
+                        onCheckedChange = onToggleBiometric,
+                        textColor = textColor
+                    )
 
                     HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
 
@@ -277,7 +521,7 @@ fun KronoSettingsScreen(
                         Icon(imageVector = Icons.Default.Lock, contentDescription = null, tint = ChronoCyan)
                         Spacer(modifier = Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Código PIN de Seguridad", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                            Text("Código PIN de Seguridad", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = textColor)
                             Text(
                                 if (settings.securityPin.isNullOrEmpty()) "Sin configurar" else "PIN activo (4 dígitos)",
                                 fontSize = 12.sp,
@@ -296,21 +540,13 @@ fun KronoSettingsScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 4. SMART FOLDERS & CUSTOM TABS
-            Text(
-                text = "PESTAÑAS Y CARPETAS INTELIGENTES",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = ChronoCyan,
-                letterSpacing = 1.sp,
-                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
-            )
-
+            // 7. GESTOR DE CARPETAS Y PESTAÑAS
+            SectionHeader(title = "PESTAÑAS Y CARPETAS INTELIGENTES")
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onOpenFolderManager() },
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF0C1322)),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Row(
@@ -320,7 +556,7 @@ fun KronoSettingsScreen(
                     Icon(imageVector = Icons.Default.Folder, contentDescription = null, tint = ChronoCyan)
                     Spacer(modifier = Modifier.width(14.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Gestor de Pestañas y Carpetas", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                        Text("Gestor de Pestañas y Carpetas", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = textColor)
                         Text("Reordena pestañas, activa o crea carpetas personalizadas", fontSize = 12.sp, color = Color.Gray)
                     }
                     Icon(
@@ -386,28 +622,42 @@ fun KronoSettingsScreen(
 }
 
 @Composable
-fun ThemeOptionBox(
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = ChronoCyan,
+        letterSpacing = 1.sp,
+        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+    )
+}
+
+@Composable
+private fun KronoSwitchRow(
+    icon: ImageVector,
     title: String,
     subtitle: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    textColor: Color
 ) {
-    Box(
-        modifier = modifier
-            .border(
-                width = if (isSelected) 1.5.dp else 1.dp,
-                color = if (isSelected) ChronoCyan else Color(0xFF1E2B42),
-                shape = RoundedCornerShape(12.dp)
-            )
-            .background(if (isSelected) Color(0xFF002233) else Color(0xFF070B14), RoundedCornerShape(12.dp))
-            .clickable { onClick() }
-            .padding(vertical = 12.dp, horizontal = 6.dp),
-        contentAlignment = Alignment.Center
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = if (isSelected) ChronoCyan else Color.White)
-            Text(subtitle, fontSize = 10.sp, color = Color.Gray)
+        Icon(imageVector = icon, contentDescription = null, tint = ChronoCyan)
+        Spacer(modifier = Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = textColor)
+            Text(subtitle, fontSize = 12.sp, color = Color.Gray)
         }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(checkedThumbColor = AmoledBlack, checkedTrackColor = ChronoCyan)
+        )
     }
 }

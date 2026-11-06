@@ -229,6 +229,9 @@ class MainActivity : ComponentActivity() {
                                 onBack = { viewModel.navigateBack() },
                                 onToggleSetting = { type, enabled ->
                                     viewModel.setNotificationSetting(type, enabled)
+                                },
+                                onSetBadgeType = { type ->
+                                    viewModel.setNotificationBadgeType(type)
                                 }
                             )
                         }
@@ -252,6 +255,9 @@ class MainActivity : ComponentActivity() {
                                 onToggleAutoDownload = { type, enabled ->
                                     viewModel.setAutoDownload(type, enabled)
                                 },
+                                onSetStorageOptions = { dur, max ->
+                                    viewModel.setDataStorageOptions(dur, max)
+                                },
                                 onClearCache = {
                                     viewModel.clearCache()
                                 }
@@ -268,6 +274,9 @@ class MainActivity : ComponentActivity() {
                                 },
                                 onSetAppearance = { fontSize, cornerRadius ->
                                     viewModel.setChatAppearance(fontSize, cornerRadius)
+                                },
+                                onSetChatSetting = { key, value ->
+                                    viewModel.setChatSetting(key, value)
                                 }
                             )
                         }
@@ -303,6 +312,7 @@ class MainActivity : ComponentActivity() {
                                 onSetThemeMode = { viewModel.setThemeMode(it) },
                                 onToggleBiometric = { viewModel.toggleBiometricLock(it) },
                                 onSetSecurityPin = { viewModel.setSecurityPin(it) },
+                                onSetKronoFeature = { key, value -> viewModel.setKronoFeature(key, value) },
                                 onOpenFolderManager = { viewModel.navigateTo(ScreenDestination.FolderManager) }
                             )
                         }
