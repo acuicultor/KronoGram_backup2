@@ -80,21 +80,51 @@ buildConfigField("int", "TELEGRAM_API_ID", "37574376")
 buildConfigField("String", "TELEGRAM_API_HASH", "\"51b61cb9574c106fd63b3f3c0f1e74fd\"")
 ```
 
-### 3. Compilar el APK en Modo Debug
-Ejecuta la tarea Gradle correspondiente:
+### 3. Compilar el APK en Modo Debug (Usando el Gradle Wrapper)
+Se recomienda **siempre usar el Gradle Wrapper (`./gradlew`)** incluido en el repositorio en lugar del comando `gradle` del sistema de Ubuntu, ya que garantiza la versión exacta de Gradle (9.3.1) requerida por el Android Gradle Plugin 9.1+:
+
+Asegúrate de otorgar permisos de ejecución al wrapper la primera vez:
 ```bash
-gradle :app:assembleDebug
+chmod +x ./gradlew
+```
+
+Para listar los proyectos y comprobar que `:app` está correctamente indexado:
+```bash
+./gradlew projects
+```
+
+Para compilar el APK en modo depuración:
+```bash
+./gradlew :app:assembleDebug
 ```
 El APK compilado se generará en:
 `app/build/outputs/apk/debug/app-debug.apk`
 
 ### 4. Compilar el APK en Modo Release
-Para generar el paquete optimizado de producción:
+Para generar el paquete de producción:
 ```bash
-gradle :app:assembleRelease
+./gradlew :app:assembleRelease
 ```
-El archivo resultante se ubicará en:
-`app/build/outputs/apk/release/app-release-unsigned.apk` (o firmado con tu keystore de lanzamiento).
+
+---
+
+## 🔧 Solución de Problemas Comunes
+
+### Error: `Project 'app' not found in root project 'KronoGram'`
+Si recibes este mensaje al ejecutar la compilación en tu máquina local:
+1. **Comprueba la estructura de carpetas:**
+   Asegúrate de que estás en la raíz del proyecto y que la carpeta `app/` existe con su archivo `build.gradle.kts`:
+   ```bash
+   pwd # Debe ser ~/android/Apps/KronoGram
+   ls -la app/ # Debe mostrar build.gradle.kts y src/
+   ```
+   Si descomprimiste un ZIP que contenía una subcarpeta intermedia (por ejemplo `~/android/Apps/KronoGram/KronoGram/...`), accede a esa carpeta antes de compilar.
+
+2. **Utiliza `./gradlew` en lugar de `gradle`:**
+   En Ubuntu, el paquete de sistema `gradle` suele ser una versión antigua o incompatible con proyectos modernos de Gradle 9 y Kotlin 2. Ejecuta siempre:
+   ```bash
+   ./gradlew :app:assembleDebug
+   ```
 
 ### 5. Ejecutar las Pruebas Locales (Unit / Robolectric)
 Para verificar la integridad de la base de datos Room, los repositorios y las vistas:
