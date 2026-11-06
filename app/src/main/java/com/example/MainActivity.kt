@@ -66,7 +66,10 @@ class MainActivity : ComponentActivity() {
             val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
             val scope = rememberCoroutineScope()
 
-            KronoGramTheme(themeMode = settings.themeMode) {
+            KronoGramTheme(
+                themeMode = settings.themeMode,
+                useMonet = settings.useMonetColors
+            ) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -277,6 +280,9 @@ class MainActivity : ComponentActivity() {
                                 onBack = { viewModel.navigateBack() },
                                 onSetThemeMode = { mode ->
                                     viewModel.setThemeMode(mode)
+                                },
+                                onToggleMonet = { enabled ->
+                                    viewModel.toggleMonetColors(enabled)
                                 },
                                 onSetAppearance = { fontSize, cornerRadius ->
                                     viewModel.setChatAppearance(fontSize, cornerRadius)

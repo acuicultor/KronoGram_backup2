@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.FontDownload
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Mood
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -117,6 +118,49 @@ fun KronoInterfaceSettingsScreen(
                         color = if (isLight) MaterialTheme.colorScheme.onSurface else Color(0xFFCBD5E1),
                         lineHeight = 18.sp
                     )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            SectionHeader(title = "COLOR DINÁMICO MONET (MATERIAL YOU)")
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = cardBg),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column {
+                    KronoSwitchRow(
+                        icon = Icons.Default.Palette,
+                        title = "Acento dinámico Monet",
+                        subtitle = "Sigue la paleta de colores de tu fondo de pantalla del sistema en cualquiera de los temas (Día, Noche o AMOLED)",
+                        checked = settings.useMonetColors,
+                        onCheckedChange = { onSetFeature("use_monet_colors", it) },
+                        textColor = textColor
+                    )
+
+                    if (settings.useMonetColors) {
+                        HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(14.dp)
+                                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                text = "Acento Monet activo en tiempo real con el fondo del sistema",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
                 }
             }
 

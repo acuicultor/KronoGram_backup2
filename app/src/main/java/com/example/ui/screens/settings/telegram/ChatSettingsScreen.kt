@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.filled.Animation
 import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -64,6 +66,7 @@ fun ChatSettingsScreen(
     settings: KronoSettingsState,
     onBack: () -> Unit,
     onSetThemeMode: (KronoThemeMode) -> Unit,
+    onToggleMonet: (Boolean) -> Unit = {},
     onSetAppearance: (fontSize: Int, cornerRadius: Int) -> Unit,
     onSetChatSetting: (key: String, value: Any) -> Unit = { _, _ -> }
 ) {
@@ -187,35 +190,83 @@ fun ChatSettingsScreen(
                 colors = CardDefaults.cardColors(containerColor = cardBg),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(14.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    ThemeSelectCard(
-                        title = "Día Clásico",
-                        subtitle = "Telegram Blue",
-                        isSelected = settings.themeMode == KronoThemeMode.LIGHT_DAY,
-                        onClick = { onSetThemeMode(KronoThemeMode.LIGHT_DAY) },
-                        modifier = Modifier.weight(1f)
-                    )
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        ThemeSelectCard(
+                            title = "Día Clásico",
+                            subtitle = "Telegram Blue",
+                            isSelected = settings.themeMode == KronoThemeMode.LIGHT_DAY,
+                            onClick = { onSetThemeMode(KronoThemeMode.LIGHT_DAY) },
+                            modifier = Modifier.weight(1f)
+                        )
 
-                    ThemeSelectCard(
-                        title = "Noche Cyber",
-                        subtitle = "Obsidiana",
-                        isSelected = settings.themeMode == KronoThemeMode.DARK_NIGHT,
-                        onClick = { onSetThemeMode(KronoThemeMode.DARK_NIGHT) },
-                        modifier = Modifier.weight(1f)
-                    )
+                        ThemeSelectCard(
+                            title = "Noche Cyber",
+                            subtitle = "Obsidiana",
+                            isSelected = settings.themeMode == KronoThemeMode.DARK_NIGHT,
+                            onClick = { onSetThemeMode(KronoThemeMode.DARK_NIGHT) },
+                            modifier = Modifier.weight(1f)
+                        )
 
-                    ThemeSelectCard(
-                        title = "AMOLED",
-                        subtitle = "#000000 Puro",
-                        isSelected = settings.themeMode == KronoThemeMode.AMOLED_PURE,
-                        onClick = { onSetThemeMode(KronoThemeMode.AMOLED_PURE) },
-                        modifier = Modifier.weight(1f)
-                    )
+                        ThemeSelectCard(
+                            title = "AMOLED",
+                            subtitle = "#000000 Puro",
+                            isSelected = settings.themeMode == KronoThemeMode.AMOLED_PURE,
+                            onClick = { onSetThemeMode(KronoThemeMode.AMOLED_PURE) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    HorizontalDivider(color = Color(0xFF162136), thickness = 0.5.dp)
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Palette,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(14.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Color dinámico Monet (Material You)",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = textColor
+                            )
+                            Text(
+                                text = "Aplica los colores de acento de tu fondo de pantalla al tema seleccionado",
+                                fontSize = 12.sp,
+                                color = Color.Gray,
+                                lineHeight = 16.sp
+                            )
+                        }
+                        Switch(
+                            checked = settings.useMonetColors,
+                            onCheckedChange = { onToggleMonet(it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = AmoledBlack,
+                                checkedTrackColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                    }
                 }
             }
 

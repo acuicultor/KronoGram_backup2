@@ -1,10 +1,14 @@
 package com.example.ui.theme
 
+import android.os.Build
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 
 val AmoledDarkColorScheme = darkColorScheme(
     primary = ChronoCyan,
@@ -77,12 +81,73 @@ enum class KronoThemeMode {
 @Composable
 fun KronoGramTheme(
     themeMode: KronoThemeMode = KronoThemeMode.AMOLED_PURE,
+    useMonet: Boolean = false,
     content: @Composable () -> Unit
 ) {
+    val context = LocalContext.current
+    val isMonetAvailable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && useMonet
+
     val colorScheme = when (themeMode) {
-        KronoThemeMode.AMOLED_PURE -> AmoledDarkColorScheme
-        KronoThemeMode.DARK_NIGHT -> NightColorScheme
-        KronoThemeMode.LIGHT_DAY -> LightColorScheme
+        KronoThemeMode.AMOLED_PURE -> {
+            if (isMonetAvailable) {
+                val dyn = dynamicDarkColorScheme(context)
+                AmoledDarkColorScheme.copy(
+                    primary = dyn.primary,
+                    onPrimary = dyn.onPrimary,
+                    primaryContainer = dyn.primaryContainer,
+                    onPrimaryContainer = dyn.onPrimaryContainer,
+                    secondary = dyn.secondary,
+                    onSecondary = dyn.onSecondary,
+                    secondaryContainer = dyn.secondaryContainer,
+                    onSecondaryContainer = dyn.onSecondaryContainer,
+                    tertiary = dyn.tertiary,
+                    onTertiary = dyn.onTertiary,
+                    background = AmoledBlack,
+                    surface = AmoledSurface,
+                    surfaceVariant = AmoledSurfaceVariant
+                )
+            } else {
+                AmoledDarkColorScheme
+            }
+        }
+        KronoThemeMode.DARK_NIGHT -> {
+            if (isMonetAvailable) {
+                val dyn = dynamicDarkColorScheme(context)
+                NightColorScheme.copy(
+                    primary = dyn.primary,
+                    onPrimary = dyn.onPrimary,
+                    primaryContainer = dyn.primaryContainer,
+                    onPrimaryContainer = dyn.onPrimaryContainer,
+                    secondary = dyn.secondary,
+                    onSecondary = dyn.onSecondary,
+                    secondaryContainer = dyn.secondaryContainer,
+                    onSecondaryContainer = dyn.onSecondaryContainer,
+                    tertiary = dyn.tertiary,
+                    onTertiary = dyn.onTertiary
+                )
+            } else {
+                NightColorScheme
+            }
+        }
+        KronoThemeMode.LIGHT_DAY -> {
+            if (isMonetAvailable) {
+                val dyn = dynamicLightColorScheme(context)
+                LightColorScheme.copy(
+                    primary = dyn.primary,
+                    onPrimary = dyn.onPrimary,
+                    primaryContainer = dyn.primaryContainer,
+                    onPrimaryContainer = dyn.onPrimaryContainer,
+                    secondary = dyn.secondary,
+                    onSecondary = dyn.onSecondary,
+                    secondaryContainer = dyn.secondaryContainer,
+                    onSecondaryContainer = dyn.onSecondaryContainer,
+                    tertiary = dyn.tertiary,
+                    onTertiary = dyn.onTertiary
+                )
+            } else {
+                LightColorScheme
+            }
+        }
     }
 
     MaterialTheme(

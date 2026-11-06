@@ -42,6 +42,7 @@ data class KronoSettingsState(
     val confirmBeforeCall: Boolean = true,
     val ignoreBlockedUsersInGroups: Boolean = true,
     val localEditHistory: Boolean = true,
+    val useMonetColors: Boolean = false,
 
     // Telegram Native Settings Expanded
     val notificationsPrivateChats: Boolean = true,
@@ -133,6 +134,7 @@ class KronoPreferencesRepository(context: Context) {
             confirmBeforeCall = prefs.getBoolean("confirm_call", true),
             ignoreBlockedUsersInGroups = prefs.getBoolean("ignore_blocked_groups", true),
             localEditHistory = prefs.getBoolean("local_edit_history", true),
+            useMonetColors = prefs.getBoolean("use_monet_colors", false),
 
             // Telegram Native
             notificationsPrivateChats = prefs.getBoolean("notif_private", true),
@@ -250,8 +252,14 @@ class KronoPreferencesRepository(context: Context) {
             "confirm_call" -> { editor.putBoolean("confirm_call", value as Boolean); _settingsState.value = _settingsState.value.copy(confirmBeforeCall = value) }
             "ignore_blocked_groups" -> { editor.putBoolean("ignore_blocked_groups", value as Boolean); _settingsState.value = _settingsState.value.copy(ignoreBlockedUsersInGroups = value) }
             "local_edit_history" -> { editor.putBoolean("local_edit_history", value as Boolean); _settingsState.value = _settingsState.value.copy(localEditHistory = value) }
+            "use_monet", "use_monet_colors" -> { editor.putBoolean("use_monet_colors", value as Boolean); _settingsState.value = _settingsState.value.copy(useMonetColors = value) }
         }
         editor.apply()
+    }
+
+    fun toggleMonetColors(enabled: Boolean) {
+        prefs.edit().putBoolean("use_monet_colors", enabled).apply()
+        _settingsState.value = _settingsState.value.copy(useMonetColors = enabled)
     }
 
     fun setNotificationSetting(type: String, enabled: Boolean) {

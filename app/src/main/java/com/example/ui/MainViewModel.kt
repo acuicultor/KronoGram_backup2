@@ -196,6 +196,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         preferencesRepo.setThemeMode(mode)
     }
 
+    fun toggleMonetColors(enabled: Boolean) {
+        preferencesRepo.toggleMonetColors(enabled)
+    }
+
     fun toggleBiometricLock(enabled: Boolean) {
         preferencesRepo.setBiometricLock(enabled)
     }

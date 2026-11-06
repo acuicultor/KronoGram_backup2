@@ -139,8 +139,20 @@ Para eliminar la pantalla única con scroll infinito y ofrecer la misma experien
 
 ---
 
-### 8. Plan de Verificación
+### 8. Soporte de Color Dinámico Monet (Material You) (Completado)
 
-- Validar compilación con `compile_applet`.
+Se ha implementado el soporte dinámico Monet en todos los temas de KronoGram:
+- **`Theme.kt`**: Extracción del esquema de color dinámico del sistema con `dynamicDarkColorScheme` y `dynamicLightColorScheme` (Android 12+).
+  - En **AMOLED Puro**, conserva el fondo negro absoluto `#000000` pero colorea todos los acentos con los tonos del fondo de pantalla.
+  - En **Noche Cyber** y **Día Clásico**, adapta los acentos, botones y burbujas al color del sistema.
+- **`KronoInterfaceSettingsScreen.kt`**: Sección interactiva "COLOR DINÁMICO MONET (MATERIAL YOU)" con interruptor y badge de estado en tiempo real.
+- **`ChatSettingsScreen.kt`**: Interruptor integrado junto al selector de temas para alternar rápidamente entre la paleta tradicional y la paleta dinámica Monet.
+- **Persistencia**: Estado guardado en SharedPreferences y propagado reactivamente por `MainViewModel`.
+
+---
+
+### 9. Plan de Verificación
+
+- Validar compilación con `compile_applet` (Exitoso).
 - Comprobar que todos los enlaces de ajustes navegan a sus pantallas correspondientes y que el botón de volver (flecha atrás y botón físico de Android) funciona en todas las vistas.
-- Verificar que el cambio entre los 3 temas (Día, Noche, AMOLED) actualiza la interfaz de inmediato.
+- Verificar que el cambio entre los 3 temas (Día, Noche, AMOLED) actualiza la interfaz de inmediato junto al acento Monet.
