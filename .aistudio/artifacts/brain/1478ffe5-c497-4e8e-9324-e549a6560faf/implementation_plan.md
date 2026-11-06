@@ -104,7 +104,42 @@ Se añadirán los siguientes destinos de navegación y pantallas independientes:
 
 ---
 
-### 6. Plan de Verificación
+### 7. Reestructuración de Ajustes de KronoGram en Categorías Dedicadas (Completado)
+
+Para eliminar la pantalla única con scroll infinito y ofrecer la misma experiencia pulida que los ajustes de Telegram, se ha reorganizado `KronoSettingsScreen` como un panel principal de categorías con subpantallas independientes:
+
+1. **`KronoTranslateSettingsScreen` (Traducción Integrada):**
+   - Selección de motor (Google Translate, DeepL, Motor Local Krono).
+   - Selector de idioma de destino (Español, English, Français, Deutsch, etc.).
+   - Interruptor para botón de traducción directa en cada burbuja.
+   - Interruptor para traducir texto antes de enviar.
+2. **`KronoMessagingSettingsScreen` (Reenvío y Mensajería):**
+   - Reenvío sin cita / anónimo (elimina autor y cabecera).
+   - Reenvío con un solo toque hacia Mensajes Guardados.
+   - Selector de acción de doble toque (Responder, Traducir, Copiar, Reaccionar).
+   - Transcripción instantánea de notas de voz.
+3. **`KronoInterfaceSettingsScreen` (Personalización e Interfaz):**
+   - Emojis del sistema Android.
+   - Tipografía estándar del dispositivo.
+   - Ocultar teclado automáticamente al hacer scroll.
+   - Ocultar número en menú lateral (drawer) y avatar difuminado de cabecera.
+4. **`KronoMediaSettingsScreen` (Multimedia y Stickers):**
+   - Selector de tamaño de stickers (Pequeño, Normal, Grande).
+   - Pausa automática de vídeos al salir de pantalla.
+   - Stickers favoritos ilimitados.
+5. **`KronoPrivacySettingsScreen` (Privacidad y Seguridad):**
+   - Modo fantasma completo (sin confirmación de lectura ni doble tick azul).
+   - Ocultar estado en línea y última hora de conexión.
+   - Confirmación explícita antes de llamar para evitar accidentes.
+   - Ignorar contactos bloqueados en chats grupales.
+   - Historial local de mensajes editados.
+   - Bloqueo biométrico y configuración de PIN de 4 dígitos con diálogo interactivo.
+6. **`FolderManagerScreen` (Pestañas y Carpetas Inteligentes):**
+   - Reordenación, activación y creación de filtros personalizados de chats.
+
+---
+
+### 8. Plan de Verificación
 
 - Validar compilación con `compile_applet`.
 - Comprobar que todos los enlaces de ajustes navegan a sus pantallas correspondientes y que el botón de volver (flecha atrás y botón físico de Android) funciona en todas las vistas.

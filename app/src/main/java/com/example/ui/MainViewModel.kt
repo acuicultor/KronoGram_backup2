@@ -28,6 +28,11 @@ sealed class ScreenDestination {
     data class ChatDetail(val chatId: Long) : ScreenDestination()
     object Settings : ScreenDestination()
     object KronoSettings : ScreenDestination()
+    object KronoTranslateSettings : ScreenDestination()
+    object KronoMessagingSettings : ScreenDestination()
+    object KronoInterfaceSettings : ScreenDestination()
+    object KronoMediaSettings : ScreenDestination()
+    object KronoPrivacySettings : ScreenDestination()
     object FolderManager : ScreenDestination()
     // Dedicated Native Telegram Settings screens
     object NotificationsSettings : ScreenDestination()
@@ -151,6 +156,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             is ScreenDestination.LanguageSettings,
             is ScreenDestination.KronoSettings -> _screenDestination.value = ScreenDestination.Settings
 
+            is ScreenDestination.KronoTranslateSettings,
+            is ScreenDestination.KronoMessagingSettings,
+            is ScreenDestination.KronoInterfaceSettings,
+            is ScreenDestination.KronoMediaSettings,
+            is ScreenDestination.KronoPrivacySettings,
             is ScreenDestination.FolderManager -> _screenDestination.value = ScreenDestination.KronoSettings
             is ScreenDestination.Settings -> _screenDestination.value = ScreenDestination.ChatList
             is ScreenDestination.Auth -> {

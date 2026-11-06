@@ -30,6 +30,11 @@ import com.example.ui.screens.onboarding.OnboardingWizardScreen
 import com.example.ui.screens.settings.FolderManagerScreen
 import com.example.ui.screens.settings.KronoSettingsScreen
 import com.example.ui.screens.settings.SettingsScreen
+import com.example.ui.screens.settings.krono.KronoInterfaceSettingsScreen
+import com.example.ui.screens.settings.krono.KronoMediaSettingsScreen
+import com.example.ui.screens.settings.krono.KronoMessagingSettingsScreen
+import com.example.ui.screens.settings.krono.KronoPrivacySettingsScreen
+import com.example.ui.screens.settings.krono.KronoTranslateSettingsScreen
 import com.example.ui.screens.settings.telegram.ChatSettingsScreen
 import com.example.ui.screens.settings.telegram.DataStorageSettingsScreen
 import com.example.ui.screens.settings.telegram.DevicesSettingsScreen
@@ -308,13 +313,61 @@ class MainActivity : ComponentActivity() {
                             KronoSettingsScreen(
                                 settings = settings,
                                 onBack = { viewModel.navigateBack() },
+                                onNavigateToTranslate = { viewModel.navigateTo(ScreenDestination.KronoTranslateSettings) },
+                                onNavigateToMessaging = { viewModel.navigateTo(ScreenDestination.KronoMessagingSettings) },
+                                onNavigateToInterface = { viewModel.navigateTo(ScreenDestination.KronoInterfaceSettings) },
+                                onNavigateToMedia = { viewModel.navigateTo(ScreenDestination.KronoMediaSettings) },
+                                onNavigateToPrivacy = { viewModel.navigateTo(ScreenDestination.KronoPrivacySettings) },
+                                onNavigateToFolders = { viewModel.navigateTo(ScreenDestination.FolderManager) }
+                            )
+                        }
+
+                        is ScreenDestination.KronoTranslateSettings -> {
+                            BackHandler { viewModel.navigateBack() }
+                            KronoTranslateSettingsScreen(
+                                settings = settings,
+                                onBack = { viewModel.navigateBack() },
+                                onSetFeature = { key, value -> viewModel.setKronoFeature(key, value) }
+                            )
+                        }
+
+                        is ScreenDestination.KronoMessagingSettings -> {
+                            BackHandler { viewModel.navigateBack() }
+                            KronoMessagingSettingsScreen(
+                                settings = settings,
+                                onBack = { viewModel.navigateBack() },
+                                onSetFeature = { key, value -> viewModel.setKronoFeature(key, value) }
+                            )
+                        }
+
+                        is ScreenDestination.KronoInterfaceSettings -> {
+                            BackHandler { viewModel.navigateBack() }
+                            KronoInterfaceSettingsScreen(
+                                settings = settings,
+                                onBack = { viewModel.navigateBack() },
+                                onSetFeature = { key, value -> viewModel.setKronoFeature(key, value) }
+                            )
+                        }
+
+                        is ScreenDestination.KronoMediaSettings -> {
+                            BackHandler { viewModel.navigateBack() }
+                            KronoMediaSettingsScreen(
+                                settings = settings,
+                                onBack = { viewModel.navigateBack() },
+                                onSetFeature = { key, value -> viewModel.setKronoFeature(key, value) }
+                            )
+                        }
+
+                        is ScreenDestination.KronoPrivacySettings -> {
+                            BackHandler { viewModel.navigateBack() }
+                            KronoPrivacySettingsScreen(
+                                settings = settings,
+                                onBack = { viewModel.navigateBack() },
                                 onToggleGhostMode = { viewModel.toggleGhostMode(it) },
                                 onToggleHideOnline = { viewModel.toggleHideOnline(it) },
-                                onSetThemeMode = { viewModel.setThemeMode(it) },
                                 onToggleBiometric = { viewModel.toggleBiometricLock(it) },
                                 onSetSecurityPin = { viewModel.setSecurityPin(it) },
-                                onSetKronoFeature = { key, value -> viewModel.setKronoFeature(key, value) },
-                                onOpenFolderManager = { viewModel.navigateTo(ScreenDestination.FolderManager) }
+                                onSetFeature = { key, value -> viewModel.setKronoFeature(key, value) }
                             )
                         }
 
