@@ -173,6 +173,16 @@ app/src/main/
 
 ---
 
+## ⚡ Optimización con ProGuard / R8
+
+El proyecto tiene activada la optimización ultra-agresiva en `app/proguard-rules.pro` tanto para compilaciones **Debug** como **Release**:
+- **5 Pasadas de Optimización (`-optimizationpasses 5`):** Máxima reducción del árbol de llamadas y propagación de constantes.
+- **Reducción de Recursos (`isShrinkResources = true`):** Limpieza automática de drawables y XMLs no referenciados.
+- **Eliminación de Logs:** Supresión en tiempo de compilación de llamadas a `android.util.Log` (`-assumenosideeffects`).
+- **Preservación Segura:** Protección de entidades SQLite Room, DAOs, estado de Compose y campos de `BuildConfig` (`TELEGRAM_API_ID` y `TELEGRAM_API_HASH`).
+
+---
+
 ## 🔒 Privacidad y Seguridad
 
 - **Chats Secretos:** Protocolo de extremo a extremo sin registro en servidores centrales.
