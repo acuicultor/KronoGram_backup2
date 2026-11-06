@@ -100,20 +100,12 @@ fun OnboardingWizardScreen(
             contentAlignment = Alignment.Center
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
-                        .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    AsyncImage(
-                        model = R.drawable.kronogram_brand_logo,
-                        contentDescription = "Logo KronoGram",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
+                AsyncImage(
+                    model = R.drawable.kronogram_brand_logo,
+                    contentDescription = "Logo KronoGram",
+                    modifier = Modifier.size(84.dp),
+                    contentScale = ContentScale.Fit
+                )
 
                 Spacer(modifier = Modifier.height(12.dp))
 

@@ -119,10 +119,8 @@ fun SettingsScreen(
                     AsyncImage(
                         model = R.drawable.kronogram_brand_logo,
                         contentDescription = "Avatar de KronoGram",
-                        modifier = Modifier
-                            .size(60.dp)
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop
+                        modifier = Modifier.size(60.dp),
+                        contentScale = ContentScale.Fit
                     )
 
                     Spacer(modifier = Modifier.width(14.dp))

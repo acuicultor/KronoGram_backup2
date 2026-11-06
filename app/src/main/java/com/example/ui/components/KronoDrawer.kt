@@ -91,19 +91,12 @@ fun KronoDrawer(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(62.dp)
-                            .clip(CircleShape)
-                            .border(2.dp, Color.White.copy(alpha = 0.8f), CircleShape)
-                    ) {
-                        AsyncImage(
-                            model = R.drawable.kronogram_brand_logo,
-                            contentDescription = "Avatar KronoGram",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
+                    AsyncImage(
+                        model = R.drawable.kronogram_brand_logo,
+                        contentDescription = "Avatar KronoGram",
+                        modifier = Modifier.size(64.dp),
+                        contentScale = ContentScale.Fit
+                    )
 
                     Spacer(modifier = Modifier.weight(1f))
 

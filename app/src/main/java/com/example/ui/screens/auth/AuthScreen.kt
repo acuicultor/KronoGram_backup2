@@ -139,21 +139,15 @@ fun AuthScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Exact official KronoGram brand image
-        Box(
+        // Exact clean Krono brand emblem
+        AsyncImage(
+            model = R.drawable.kronogram_brand_logo,
+            contentDescription = "KronoGram Oficial",
             modifier = Modifier
-                .size(92.dp)
-                .clip(CircleShape)
-                .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            AsyncImage(
-                model = R.drawable.kronogram_brand_logo,
-                contentDescription = "KronoGram Oficial",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
-        }
+                .size(100.dp)
+                .padding(4.dp),
+            contentScale = ContentScale.Fit
+        )
 
         Spacer(modifier = Modifier.height(14.dp))
 
