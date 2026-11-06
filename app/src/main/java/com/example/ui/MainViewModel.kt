@@ -57,7 +57,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _selectedFolderId = MutableStateFlow<String>("all")
     val selectedFolderId: StateFlow<String> = _selectedFolderId.asStateFlow()
 
-    private val _screenDestination = MutableStateFlow<ScreenDestination>(ScreenDestination.ChatList)
+    private val _screenDestination = MutableStateFlow<ScreenDestination>(ScreenDestination.Auth)
     val screenDestination: StateFlow<ScreenDestination> = _screenDestination.asStateFlow()
 
     private val _activeChatId = MutableStateFlow<Long?>(null)
@@ -100,16 +100,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
-            if (!preferencesRepo.settingsState.value.isOnboardingCompleted) {
-                _screenDestination.value = ScreenDestination.Onboarding
-            } else if (engine.authState.value !is AuthState.Ready) {
-                _screenDestination.value = ScreenDestination.Auth
-            } else {
+            if (engine.authState.value is AuthState.Ready) {
                 _screenDestination.value = ScreenDestination.ChatList
+            } else {
+                _screenDestination.value = ScreenDestination.Auth
             }
 
             folderRepo.initializeDefaultFolders()
-            engine.seedInitialTelegramData()
         }
     }
 

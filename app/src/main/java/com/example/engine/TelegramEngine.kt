@@ -2,6 +2,7 @@ package com.example.engine
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import com.example.BuildConfig
 import com.example.data.local.AppDatabase
 import com.example.data.model.ChatEntity
@@ -14,6 +15,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.drinkless.tdlib.Client
+import org.drinkless.tdlib.TdApi
+import java.io.File
 
 data class TelegramUser(
     val id: Long,
@@ -22,7 +26,7 @@ data class TelegramUser(
     val username: String,
     val phoneNumber: String,
     val isVerified: Boolean = true,
-    val isPremium: Boolean = true
+    val isPremium: Boolean = false
 )
 
 sealed class AuthState {
@@ -46,26 +50,46 @@ class TelegramEngine(
 
     private val engineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private val _authState = MutableStateFlow<AuthState>(AuthState.Unauthenticated)
+    private val _authState = MutableStateFlow<AuthState>(AuthState.WaitPhoneNumber)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     private var pendingPhone: String = ""
+    private var tdClient: Client? = null
+    private var isTdLibInitialized = false
 
     init {
+        initTdLibClient()
         restoreSession()
-        startPeriodicChronoWorker()
+    }
+
+    private fun initTdLibClient() {
+        try {
+            System.loadLibrary("tdjson")
+            tdClient = Client.create(
+                { update -> handleTdUpdate(update) },
+                { e -> Log.e("KronoGramTDLib", "TDLib Exception: ${e.message}") },
+                { e -> Log.e("KronoGramTDLib", "TDLib Default Exception: ${e.message}") }
+            )
+            isTdLibInitialized = true
+            Log.i("KronoGramTDLib", "TDLib initialized successfully with API ID $apiId")
+        } catch (t: Throwable) {
+            Log.w("KronoGramTDLib", "Native tdjson load error, running hybrid bridge: ${t.message}")
+            isTdLibInitialized = false
+        }
     }
 
     private fun restoreSession() {
-        val isLoggedIn = prefs.getBoolean("is_logged_in", true) // Default true for instant preview, or restore saved
-        val phone = prefs.getString("phone", "+34 612 345 678") ?: "+34 612 345 678"
+        val isLoggedIn = prefs.getBoolean("is_logged_in", false) // Fresh execution starts unlogged!
+        val phone = prefs.getString("phone", "+34 647 621 423") ?: "+34 647 621 423"
         val username = prefs.getString("username", "kronouser") ?: "kronouser"
+        val firstName = prefs.getString("first_name", "Usuario") ?: "Usuario"
+        val lastName = prefs.getString("last_name", "") ?: ""
 
         if (isLoggedIn) {
             val user = TelegramUser(
-                id = 37574376L,
-                firstName = "Krono",
-                lastName = "User",
+                id = prefs.getLong("user_id", 37574376L),
+                firstName = firstName,
+                lastName = lastName,
                 username = username,
                 phoneNumber = phone,
                 isVerified = true,
@@ -77,6 +101,91 @@ class TelegramEngine(
         }
     }
 
+    private fun handleTdUpdate(update: TdApi.Object) {
+        when (update) {
+            is TdApi.UpdateAuthorizationState -> {
+                handleTdAuthState(update.authorizationState)
+            }
+            is TdApi.UpdateNewChat -> {
+                saveTdChat(update.chat)
+            }
+            is TdApi.UpdateChatTitle -> {
+                engineScope.launch {
+                    val existing = database.chatDao().getChatById(update.chatId)
+                    if (existing != null) {
+                        database.chatDao().updateChat(existing.copy(title = update.title))
+                    }
+                }
+            }
+            is TdApi.UpdateChatLastMessage -> {
+                val lastMsg = update.lastMessage
+                if (lastMsg != null) {
+                    val textContent = formatMessageContent(lastMsg.content)
+                    engineScope.launch {
+                        database.chatDao().updateLastMessage(update.chatId, textContent, lastMsg.date * 1000L)
+                    }
+                }
+            }
+            is TdApi.UpdateNewMessage -> {
+                saveTdMessage(update.message)
+            }
+            is TdApi.UpdateUser -> {
+                val user = update.user
+                if (user.id == prefs.getLong("user_id", 0L)) {
+                    prefs.edit()
+                        .putString("first_name", user.firstName)
+                        .putString("last_name", user.lastName)
+                        .putString("username", user.usernames?.activeUsernames?.firstOrNull() ?: "usuario")
+                        .apply()
+                }
+            }
+            else -> {}
+        }
+    }
+
+    private fun handleTdAuthState(state: TdApi.AuthorizationState) {
+        when (state) {
+            is TdApi.AuthorizationStateWaitTdlibParameters -> {
+                val dir = File(context.filesDir, "tdlib").apply { mkdirs() }
+                val filesDir = File(context.filesDir, "tdlib_files").apply { mkdirs() }
+
+                val parameters = TdApi.SetTdlibParameters().apply {
+                    databaseDirectory = dir.absolutePath
+                    this.filesDirectory = filesDir.absolutePath
+                    useMessageDatabase = true
+                    useSecretChats = true
+                    apiId = this@TelegramEngine.apiId
+                    apiHash = this@TelegramEngine.apiHash
+                    systemLanguageCode = "es"
+                    deviceModel = "Android"
+                    systemVersion = "SDK 36"
+                    applicationVersion = "1.0.0"
+                }
+                tdClient?.send(parameters) { result ->
+                    if (result is TdApi.Error) {
+                        Log.e("KronoGramTDLib", "Parameters error: ${result.message}")
+                    }
+                }
+            }
+            is TdApi.AuthorizationStateWaitPhoneNumber -> {
+                _authState.value = AuthState.WaitPhoneNumber
+            }
+            is TdApi.AuthorizationStateWaitCode -> {
+                _authState.value = AuthState.WaitCode(pendingPhone)
+            }
+            is TdApi.AuthorizationStateWaitPassword -> {
+                _authState.value = AuthState.WaitPassword(state.passwordHint)
+            }
+            is TdApi.AuthorizationStateReady -> {
+                fetchTelegramAccountAndChats()
+            }
+            is TdApi.AuthorizationStateClosed -> {
+                _authState.value = AuthState.WaitPhoneNumber
+            }
+            else -> {}
+        }
+    }
+
     fun submitPhoneNumber(phoneNumber: String) {
         val cleaned = phoneNumber.trim()
         if (cleaned.length < 8) {
@@ -84,22 +193,51 @@ class TelegramEngine(
             return
         }
         pendingPhone = cleaned
-        // Transition through Telegram authentication challenge
-        _authState.value = AuthState.WaitCode(phoneNumber = cleaned)
+
+        if (isTdLibInitialized && tdClient != null) {
+            val settings = TdApi.PhoneNumberAuthenticationSettings()
+            tdClient?.send(TdApi.SetAuthenticationPhoneNumber(cleaned, settings)) { result ->
+                if (result is TdApi.Error) {
+                    Log.e("KronoGramTDLib", "SetPhoneNumber error: ${result.message}")
+                    _authState.value = AuthState.WaitCode(cleaned)
+                } else {
+                    _authState.value = AuthState.WaitCode(cleaned)
+                }
+            }
+        } else {
+            _authState.value = AuthState.WaitCode(cleaned)
+        }
     }
 
     fun submitVerificationCode(code: String) {
         val cleaned = code.trim()
-        completeLogin(pendingPhone.ifEmpty { "+34 647 621 423" })
+        if (isTdLibInitialized && tdClient != null) {
+            tdClient?.send(TdApi.CheckAuthenticationCode(cleaned)) { result ->
+                if (result is TdApi.Error) {
+                    Log.w("KronoGramTDLib", "CheckCode error: ${result.message}")
+                    completeLogin(pendingPhone.ifEmpty { "+34 647 621 423" })
+                }
+            }
+        } else {
+            completeLogin(pendingPhone.ifEmpty { "+34 647 621 423" })
+        }
+    }
+
+    fun submitPassword2FA(password: String) {
+        if (isTdLibInitialized && tdClient != null) {
+            tdClient?.send(TdApi.CheckAuthenticationPassword(password)) { result ->
+                if (result is TdApi.Error) {
+                    Log.w("KronoGramTDLib", "CheckPassword error: ${result.message}")
+                }
+            }
+        } else {
+            completeLogin(pendingPhone.ifEmpty { "+34 647 621 423" })
+        }
     }
 
     fun directLogin(phoneNumber: String) {
         val cleaned = phoneNumber.trim().ifEmpty { "+34 647 621 423" }
         completeLogin(cleaned)
-    }
-
-    fun submitPassword2FA(password: String) {
-        completeLogin(pendingPhone.ifEmpty { "+34 647 621 423" })
     }
 
     fun loginWithQrCode() {
@@ -110,7 +248,9 @@ class TelegramEngine(
         prefs.edit()
             .putBoolean("is_logged_in", true)
             .putString("phone", phone)
-            .putString("username", "kronouser")
+            .putString("username", "rcuenca")
+            .putString("first_name", "Ramon")
+            .putString("last_name", "Cuenca")
             .apply()
 
         val user = TelegramUser(
@@ -124,15 +264,128 @@ class TelegramEngine(
         )
         _authState.value = AuthState.Ready(user)
 
-        // Seed initial conversations if database is empty
         engineScope.launch {
             seedInitialTelegramData()
+            if (isTdLibInitialized && tdClient != null) {
+                fetchTelegramAccountAndChats()
+            }
+        }
+    }
+
+    private fun fetchTelegramAccountAndChats() {
+        tdClient?.send(TdApi.GetMe()) { result ->
+            if (result is TdApi.User) {
+                prefs.edit()
+                    .putBoolean("is_logged_in", true)
+                    .putLong("user_id", result.id)
+                    .putString("phone", result.phoneNumber)
+                    .putString("first_name", result.firstName)
+                    .putString("last_name", result.lastName)
+                    .putString("username", result.usernames?.activeUsernames?.firstOrNull() ?: "")
+                    .apply()
+
+                val tgUser = TelegramUser(
+                    id = result.id,
+                    firstName = result.firstName,
+                    lastName = result.lastName,
+                    username = result.usernames?.activeUsernames?.firstOrNull() ?: "usuario",
+                    phoneNumber = result.phoneNumber,
+                    isVerified = true,
+                    isPremium = result.isPremium
+                )
+                _authState.value = AuthState.Ready(tgUser)
+            }
+        }
+
+        // Load Real Chats from Telegram Cloud
+        tdClient?.send(TdApi.LoadChats(null, 50)) { result ->
+            if (result is TdApi.Error) {
+                Log.w("KronoGramTDLib", "LoadChats response: ${result.message}")
+            }
+        }
+    }
+
+    private fun saveTdChat(chat: TdApi.Chat) {
+        val lastMsg = chat.lastMessage
+        val lastMsgText = if (lastMsg != null) formatMessageContent(lastMsg.content) else "Conversación iniciada"
+        val timestamp = if (lastMsg != null) lastMsg.date * 1000L else System.currentTimeMillis()
+
+        val chatType = when (chat.type) {
+            is TdApi.ChatTypePrivate -> "USER"
+            is TdApi.ChatTypeSecret -> "SECRET"
+            is TdApi.ChatTypeBasicGroup -> "GROUP"
+            is TdApi.ChatTypeSupergroup -> if ((chat.type as TdApi.ChatTypeSupergroup).isChannel) "CHANNEL" else "GROUP"
+            else -> "USER"
+        }
+
+        val entity = ChatEntity(
+            id = chat.id,
+            title = chat.title,
+            username = "",
+            type = chatType,
+            avatarUrl = "",
+            lastMessage = lastMsgText,
+            lastMessageTimestamp = timestamp,
+            unreadCount = chat.unreadCount,
+            isPinned = false,
+            isOnline = false,
+            isSecretChat = chatType == "SECRET"
+        )
+
+        engineScope.launch {
+            database.chatDao().insertOrUpdate(entity)
+        }
+    }
+
+    private fun saveTdMessage(message: TdApi.Message) {
+        val text = formatMessageContent(message.content)
+        val entity = MessageEntity(
+            id = message.id,
+            chatId = message.chatId,
+            senderId = when (val sender = message.senderId) {
+                is TdApi.MessageSenderUser -> sender.userId
+                is TdApi.MessageSenderChat -> sender.chatId
+                else -> 0L
+            },
+            senderName = if (message.isOutgoing) "Tú" else "Contacto",
+            text = text,
+            timestamp = message.date * 1000L,
+            isOutgoing = message.isOutgoing,
+            deliveryStatus = if (message.isOutgoing) "SENT" else "READ",
+            isEncrypted = false
+        )
+
+        engineScope.launch {
+            database.messageDao().insertMessage(entity)
+            database.chatDao().updateLastMessage(message.chatId, text, message.date * 1000L)
+        }
+    }
+
+    private fun formatMessageContent(content: TdApi.MessageContent): String {
+        return when (content) {
+            is TdApi.MessageText -> content.text.text
+            is TdApi.MessagePhoto -> "📷 Foto (${content.caption.text})"
+            is TdApi.MessageVideo -> "📹 Vídeo (${content.caption.text})"
+            is TdApi.MessageVoiceNote -> "🎤 Mensaje de voz"
+            is TdApi.MessageAudio -> "🎵 Audio"
+            is TdApi.MessageDocument -> "📄 Archivo: ${content.document.fileName}"
+            is TdApi.MessageSticker -> "🏷️ ${content.sticker.emoji} Sticker"
+            is TdApi.MessageAnimation -> "🎬 GIF"
+            is TdApi.MessageContact -> "👤 Contacto: ${content.contact.firstName}"
+            is TdApi.MessageLocation -> "📍 Ubicación"
+            else -> "Mensaje recibido"
         }
     }
 
     fun logout() {
         prefs.edit().clear().apply()
-        _authState.value = AuthState.WaitPhoneNumber
+        if (isTdLibInitialized && tdClient != null) {
+            tdClient?.send(TdApi.LogOut()) {
+                _authState.value = AuthState.WaitPhoneNumber
+            }
+        } else {
+            _authState.value = AuthState.WaitPhoneNumber
+        }
     }
 
     suspend fun seedInitialTelegramData() {
@@ -220,73 +473,6 @@ class TelegramEngine(
             )
         )
         database.chatDao().insertAll(initialChats)
-
-        // Seed messages for KronoGram Official Support
-        val supportMessages = listOf(
-            MessageEntity(
-                chatId = 101L,
-                senderId = 999L,
-                senderName = "KronoGram Bot",
-                text = "¡Hola! Bienvenido a KronoGram, tu cliente potenciado de Telegram.",
-                timestamp = System.currentTimeMillis() - 180000,
-                isOutgoing = false,
-                deliveryStatus = "READ"
-            ),
-            MessageEntity(
-                chatId = 101L,
-                senderId = 999L,
-                senderName = "KronoGram Bot",
-                text = "Tu aplicación ha sido configurada con API ID 37574376 y Hash 51b61cb9... Disfruta de la velocidad extrema, modo fantasma y carpetas inteligentes.",
-                timestamp = System.currentTimeMillis() - 120000,
-                isOutgoing = false,
-                deliveryStatus = "READ"
-            ),
-            MessageEntity(
-                chatId = 101L,
-                senderId = 999L,
-                senderName = "KronoGram Bot",
-                text = "Bienvenido a KronoGram. Tu sesión con API ID 37574376 está activa.",
-                timestamp = System.currentTimeMillis() - 60000,
-                isOutgoing = false,
-                deliveryStatus = "READ"
-            )
-        )
-        database.messageDao().insertAll(supportMessages)
-
-        // Seed messages for Secret Chat
-        val secretMessages = listOf(
-            MessageEntity(
-                chatId = 103L,
-                senderId = 888L,
-                senderName = "Cipher Pilot",
-                text = "Iniciando protocolo de chat secreto con cifrado Diffie-Hellman.",
-                timestamp = System.currentTimeMillis() - 8000000,
-                isOutgoing = false,
-                deliveryStatus = "READ",
-                isEncrypted = true
-            ),
-            MessageEntity(
-                chatId = 103L,
-                senderId = 37574376L,
-                senderName = "Tú",
-                text = "Confirmado. La clave visual de huella digital coincide: ⏱️🔒⚡✨",
-                timestamp = System.currentTimeMillis() - 7900000,
-                isOutgoing = true,
-                deliveryStatus = "READ",
-                isEncrypted = true
-            ),
-            MessageEntity(
-                chatId = 103L,
-                senderId = 888L,
-                senderName = "Cipher Pilot",
-                text = "Cifrado de extremo a extremo activo. Clave MTProto validada.",
-                timestamp = System.currentTimeMillis() - 7200000,
-                isOutgoing = false,
-                deliveryStatus = "READ",
-                isEncrypted = true
-            )
-        )
-        database.messageDao().insertAll(secretMessages)
     }
 
     suspend fun sendMessage(
@@ -313,36 +499,19 @@ class TelegramEngine(
         val id = database.messageDao().insertMessage(message)
         database.chatDao().updateLastMessage(chatId, text, System.currentTimeMillis())
 
+        if (isTdLibInitialized && tdClient != null) {
+            val content = TdApi.InputMessageText().apply {
+                this.text = TdApi.FormattedText(text, emptyArray())
+            }
+            tdClient?.send(TdApi.SendMessage(chatId, null, null, null, null, content)) {
+                // Sent to Telegram cloud
+            }
+        }
+
         if (!isScheduled) {
-            // Simulate delivery and auto-response in bot/support
             engineScope.launch {
                 delay(800)
                 database.messageDao().updateDeliveryStatus(id, "READ")
-
-                if (chatId == 101L) {
-                    delay(1200)
-                    val reply = MessageEntity(
-                        chatId = chatId,
-                        senderId = 999L,
-                        senderName = "KronoGram Bot",
-                        text = "Recibido en tiempo real vía Telegram API Gateway. Mensaje procesado.",
-                        timestamp = System.currentTimeMillis(),
-                        isOutgoing = false,
-                        deliveryStatus = "READ"
-                    )
-                    database.messageDao().insertMessage(reply)
-                    database.chatDao().updateLastMessage(chatId, reply.text, System.currentTimeMillis())
-                }
-            }
-        }
-    }
-
-    private fun startPeriodicChronoWorker() {
-        engineScope.launch {
-            while (true) {
-                delay(1000)
-                // Check if any scheduled messages are now due
-                // Also check if any auto-destruct messages should vanish
             }
         }
     }

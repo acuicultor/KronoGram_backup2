@@ -87,6 +87,7 @@ class MainActivity : ComponentActivity() {
                                 authState = authState,
                                 themeMode = settings.themeMode,
                                 onLoginSuccess = { phone ->
+                                    viewModel.preferencesRepo.setOnboardingCompleted(true)
                                     viewModel.navigateTo(ScreenDestination.ChatList)
                                 }
                             )

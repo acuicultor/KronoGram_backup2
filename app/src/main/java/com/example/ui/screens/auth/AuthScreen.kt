@@ -110,6 +110,16 @@ fun AuthScreen(
     var resendCountdown by remember { mutableIntStateOf(60) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.WaitCode -> authStep = 2
+            is AuthState.WaitPassword -> authStep = 3
+            is AuthState.Ready -> onLoginSuccess(authState.user.phoneNumber)
+            is AuthState.Error -> errorMessage = authState.message
+            else -> {}
+        }
+    }
+
     LaunchedEffect(authStep) {
         if (authStep == 2) {
             resendCountdown = 60
