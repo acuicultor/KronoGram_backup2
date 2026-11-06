@@ -1,0 +1,6 @@
+{
+  "name": "KronoGram",
+  "description": "Cliente avanzado de Telegram con tema Cyber Chrono y AMOLED Puro, asistente de pestañas y carpetas inteligentes, modo fantasma y mensajería cifrada.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
