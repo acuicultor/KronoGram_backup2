@@ -16,3 +16,9 @@
 local.properties
 .env
 debug.keystore
+
+# Explicitly track assets directory and binaries for GitHub
+!assets/
+!assets/*.apk
+!assets/*.zip
+
