@@ -479,6 +479,95 @@ fun AuthScreen(
                         }
                     }
                 }
+            } else if (authStep == 3) {
+                // Step 3: 2FA Password Input
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = cardBg),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(onClick = { authStep = 1 }) {
+                                Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás", tint = textColor)
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Contraseña en la nube (2FA)",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = textColor
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text = "Tu cuenta de Telegram tiene activada la verificación en dos pasos. Introduce tu contraseña:",
+                            fontSize = 13.sp,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        OutlinedTextField(
+                            value = password2FA,
+                            onValueChange = {
+                                password2FA = it
+                                errorMessage = null
+                            },
+                            label = { Text("Contraseña de Telegram") },
+                            leadingIcon = {
+                                Icon(imageVector = Icons.Default.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            },
+                            visualTransformation = PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = Color(0xFF1E2A3A),
+                                focusedTextColor = textColor,
+                                unfocusedTextColor = textColor
+                            )
+                        )
+
+                        if (errorMessage != null) {
+                            Text(
+                                text = errorMessage ?: "",
+                                color = MaterialTheme.colorScheme.error,
+                                fontSize = 12.sp,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        Button(
+                            onClick = {
+                                if (password2FA.isNotBlank()) {
+                                    engine.submitPassword2FA(password2FA)
+                                } else {
+                                    errorMessage = "Por favor introduce tu contraseña."
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("Acceder a Telegram", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
             }
         }
 

@@ -228,6 +228,10 @@ class KronoPreferencesRepository(context: Context) {
         )
     }
 
+    fun updateAccountInfo(phone: String, username: String, displayName: String) {
+        saveAccountInfo(phone, username, displayName)
+    }
+
     // Krono Exclusive Setters
     fun setKronoFeature(key: String, value: Any) {
         val editor = prefs.edit()

@@ -46,7 +46,7 @@ sealed class ScreenDestination {
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val database = AppDatabase.getDatabase(application)
     val preferencesRepo = KronoPreferencesRepository(application)
-    val engine = TelegramEngine(application, database)
+    val engine = TelegramEngine(application, database, preferencesRepo)
     val folderRepo = FolderRepository(database.folderDao())
     val chatRepo = ChatRepository(database.chatDao(), database.messageDao(), engine, preferencesRepo)
 

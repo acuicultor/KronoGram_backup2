@@ -151,8 +151,28 @@ Se ha implementado el soporte dinámico Monet en todos los temas de KronoGram:
 
 ---
 
-### 9. Plan de Verificación
+### 10. Restauración de Imagen Oficial de KronoGram y Conexión TDLib (Completado)
 
-- Validar compilación con `compile_applet` (Exitoso).
-- Comprobar que todos los enlaces de ajustes navegan a sus pantallas correspondientes y que el botón de volver (flecha atrás y botón físico de Android) funciona en todas las vistas.
-- Verificar que el cambio entre los 3 temas (Día, Noche, AMOLED) actualiza la interfaz de inmediato junto al acento Monet.
+1. **Restauración y Adaptación del Emblema Oficial (`IMG_6f2da96a-2535-427b-8892-12106e2c4884.jpg`):**
+   - Se recortó y aisló el emblema oficial auténtico: el disco 3D con el anillo chrono neón cian y el avión de Telegram en su interior.
+   - Generado en 512x512 sRGB TrueColor sobre fondo negro absoluto `#000000` en `kronogram_brand_logo.png`.
+   - Regenerados todos los mipmaps (`ic_launcher.png` e `ic_launcher_round.png`) para `mdpi`, `hdpi`, `xhdpi`, `xxhdpi` y `xxxhdpi`.
+   - Icono adaptativo limpio en `ic_launcher_foreground.xml` (72dp centrado) e `ic_launcher_background.xml` (`#000000`).
+
+2. **Reparación de la Conexión de Cuentas de Telegram (TDLib MTProto):**
+   - **Corrección de librería nativa**: Se eliminó la llamada manual fallida a `tdjson`; el cliente TDLib carga `libtdjni.so` automáticamente mediante su inicializador estático, inicializando `isTdLibInitialized = true`.
+   - **Parámetros de TDLib**: Se incluyó `databaseEncryptionKey = ByteArray(0)`, `useFileDatabase = true`, `useChatInfoDatabase = true`, `useMessageDatabase = true` y `useSecretChats = true`, desbloqueando la inicialización de la base de datos de Telegram.
+   - **Flujo de autenticación completo**:
+     - `SetAuthenticationPhoneNumber`: Envío del número a los servidores de Telegram.
+     - `CheckAuthenticationCode`: Verificación del código de 5 dígitos enviado por Telegram.
+     - `CheckAuthenticationPassword`: Soporte nativo para verificación en dos pasos (2FA).
+     - `RequestQrCodeAuthentication`: Soporte para vincular cuenta mediante código QR.
+     - `GetMe` y `LoadChats`: Sincronización automática de perfil real (nombre, username, teléfono) y conversaciones de la nube hacia la base de datos Room.
+
+---
+
+### 11. Plan de Verificación
+
+- Compilación verificada exitosamente con `compile_applet`.
+- Verificación de imagen oficial sRGB y mipmaps para todas las densidades.
+- Verificación del flujo de conexión de cuentas de Telegram y control de errores.

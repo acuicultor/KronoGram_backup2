@@ -3,6 +3,7 @@ package com.example.engine
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import com.example.data.repository.KronoPreferencesRepository
 import com.example.BuildConfig
 import com.example.data.local.AppDatabase
 import com.example.data.model.ChatEntity
@@ -34,13 +35,15 @@ sealed class AuthState {
     object WaitPhoneNumber : AuthState()
     data class WaitCode(val phoneNumber: String, val timeoutSeconds: Int = 120) : AuthState()
     data class WaitPassword(val hint: String? = null) : AuthState()
+    data class WaitQr(val link: String) : AuthState()
     data class Ready(val user: TelegramUser) : AuthState()
     data class Error(val message: String) : AuthState()
 }
 
 class TelegramEngine(
     private val context: Context,
-    private val database: AppDatabase
+    private val database: AppDatabase,
+    private val preferencesRepo: KronoPreferencesRepository? = null
 ) {
     val apiId: Int = BuildConfig.TELEGRAM_API_ID
     val apiHash: String = BuildConfig.TELEGRAM_API_HASH
@@ -64,7 +67,6 @@ class TelegramEngine(
 
     private fun initTdLibClient() {
         try {
-            System.loadLibrary("tdjson")
             tdClient = Client.create(
                 { update -> handleTdUpdate(update) },
                 { e -> Log.e("KronoGramTDLib", "TDLib Exception: ${e.message}") },
@@ -73,7 +75,7 @@ class TelegramEngine(
             isTdLibInitialized = true
             Log.i("KronoGramTDLib", "TDLib initialized successfully with API ID $apiId")
         } catch (t: Throwable) {
-            Log.w("KronoGramTDLib", "Native tdjson load error, running hybrid bridge: ${t.message}")
+            Log.w("KronoGramTDLib", "Native tdjni load error, running hybrid bridge: ${t.message}")
             isTdLibInitialized = false
         }
     }
@@ -152,6 +154,9 @@ class TelegramEngine(
                 val parameters = TdApi.SetTdlibParameters().apply {
                     databaseDirectory = dir.absolutePath
                     this.filesDirectory = filesDir.absolutePath
+                    databaseEncryptionKey = ByteArray(0)
+                    useFileDatabase = true
+                    useChatInfoDatabase = true
                     useMessageDatabase = true
                     useSecretChats = true
                     apiId = this@TelegramEngine.apiId
@@ -160,10 +165,13 @@ class TelegramEngine(
                     deviceModel = "Android"
                     systemVersion = "SDK 36"
                     applicationVersion = "1.0.0"
+                    useTestDc = false
                 }
                 tdClient?.send(parameters) { result ->
                     if (result is TdApi.Error) {
                         Log.e("KronoGramTDLib", "Parameters error: ${result.message}")
+                    } else {
+                        Log.i("KronoGramTDLib", "SetTdlibParameters accepted")
                     }
                 }
             }
@@ -171,10 +179,15 @@ class TelegramEngine(
                 _authState.value = AuthState.WaitPhoneNumber
             }
             is TdApi.AuthorizationStateWaitCode -> {
-                _authState.value = AuthState.WaitCode(pendingPhone)
+                val phone = state.codeInfo?.phoneNumber ?: pendingPhone
+                val timeout = state.codeInfo?.timeout ?: 60
+                _authState.value = AuthState.WaitCode(phone, timeout)
             }
             is TdApi.AuthorizationStateWaitPassword -> {
                 _authState.value = AuthState.WaitPassword(state.passwordHint)
+            }
+            is TdApi.AuthorizationStateWaitOtherDeviceConfirmation -> {
+                _authState.value = AuthState.WaitQr(state.link)
             }
             is TdApi.AuthorizationStateReady -> {
                 fetchTelegramAccountAndChats()
@@ -199,8 +212,9 @@ class TelegramEngine(
             tdClient?.send(TdApi.SetAuthenticationPhoneNumber(cleaned, settings)) { result ->
                 if (result is TdApi.Error) {
                     Log.e("KronoGramTDLib", "SetPhoneNumber error: ${result.message}")
-                    _authState.value = AuthState.WaitCode(cleaned)
+                    _authState.value = AuthState.Error(result.message)
                 } else {
+                    Log.i("KronoGramTDLib", "SetPhoneNumber sent to Telegram servers")
                     _authState.value = AuthState.WaitCode(cleaned)
                 }
             }
@@ -215,7 +229,9 @@ class TelegramEngine(
             tdClient?.send(TdApi.CheckAuthenticationCode(cleaned)) { result ->
                 if (result is TdApi.Error) {
                     Log.w("KronoGramTDLib", "CheckCode error: ${result.message}")
-                    completeLogin(pendingPhone.ifEmpty { "+34 647 621 423" })
+                    _authState.value = AuthState.Error("Código no válido: ${result.message}")
+                } else {
+                    Log.i("KronoGramTDLib", "CheckAuthenticationCode verified!")
                 }
             }
         } else {
@@ -228,6 +244,7 @@ class TelegramEngine(
             tdClient?.send(TdApi.CheckAuthenticationPassword(password)) { result ->
                 if (result is TdApi.Error) {
                     Log.w("KronoGramTDLib", "CheckPassword error: ${result.message}")
+                    _authState.value = AuthState.Error("Contraseña 2FA incorrecta: ${result.message}")
                 }
             }
         } else {
@@ -235,29 +252,46 @@ class TelegramEngine(
         }
     }
 
-    fun directLogin(phoneNumber: String) {
+    fun requestQrLogin() {
+        if (isTdLibInitialized && tdClient != null) {
+            tdClient?.send(TdApi.RequestQrCodeAuthentication(longArrayOf())) { result ->
+                if (result is TdApi.Error) {
+                    Log.w("KronoGramTDLib", "RequestQrCode error: ${result.message}")
+                }
+            }
+        }
+    }
+
+    fun directLogin(phoneNumber: String, displayName: String = "Ramon Cuenca") {
         val cleaned = phoneNumber.trim().ifEmpty { "+34 647 621 423" }
-        completeLogin(cleaned)
+        completeLogin(cleaned, displayName)
     }
 
     fun loginWithQrCode() {
-        completeLogin("+34 647 621 423")
+        completeLogin("+34 647 621 423", "Ramon Cuenca")
     }
 
-    private fun completeLogin(phone: String) {
+    private fun completeLogin(phone: String, displayName: String = "Ramon Cuenca") {
+        val names = displayName.split(" ")
+        val first = names.firstOrNull() ?: "Usuario"
+        val last = if (names.size > 1) names.drop(1).joinToString(" ") else ""
+        val uname = "user_${System.currentTimeMillis() % 10000}"
+
         prefs.edit()
             .putBoolean("is_logged_in", true)
             .putString("phone", phone)
-            .putString("username", "rcuenca")
-            .putString("first_name", "Ramon")
-            .putString("last_name", "Cuenca")
+            .putString("username", uname)
+            .putString("first_name", first)
+            .putString("last_name", last)
             .apply()
+
+        preferencesRepo?.updateAccountInfo(phone, uname, displayName)
 
         val user = TelegramUser(
             id = 37574376L,
-            firstName = "Ramon",
-            lastName = "Cuenca",
-            username = "rcuenca",
+            firstName = first,
+            lastName = last,
+            username = uname,
             phoneNumber = phone,
             isVerified = true,
             isPremium = true
@@ -275,20 +309,24 @@ class TelegramEngine(
     private fun fetchTelegramAccountAndChats() {
         tdClient?.send(TdApi.GetMe()) { result ->
             if (result is TdApi.User) {
+                val uname = result.usernames?.activeUsernames?.firstOrNull() ?: ""
+                val disp = "${result.firstName} ${result.lastName}".trim()
                 prefs.edit()
                     .putBoolean("is_logged_in", true)
                     .putLong("user_id", result.id)
                     .putString("phone", result.phoneNumber)
                     .putString("first_name", result.firstName)
                     .putString("last_name", result.lastName)
-                    .putString("username", result.usernames?.activeUsernames?.firstOrNull() ?: "")
+                    .putString("username", uname)
                     .apply()
+
+                preferencesRepo?.updateAccountInfo(result.phoneNumber, uname, disp)
 
                 val tgUser = TelegramUser(
                     id = result.id,
                     firstName = result.firstName,
                     lastName = result.lastName,
-                    username = result.usernames?.activeUsernames?.firstOrNull() ?: "usuario",
+                    username = uname.ifEmpty { "usuario" },
                     phoneNumber = result.phoneNumber,
                     isVerified = true,
                     isPremium = result.isPremium
@@ -298,9 +336,21 @@ class TelegramEngine(
         }
 
         // Load Real Chats from Telegram Cloud
-        tdClient?.send(TdApi.LoadChats(null, 50)) { result ->
+        tdClient?.send(TdApi.LoadChats(TdApi.ChatListMain(), 50)) { result ->
             if (result is TdApi.Error) {
                 Log.w("KronoGramTDLib", "LoadChats response: ${result.message}")
+            }
+        }
+
+        tdClient?.send(TdApi.GetChats(TdApi.ChatListMain(), 50)) { result ->
+            if (result is TdApi.Chats) {
+                for (chatId in result.chatIds) {
+                    tdClient?.send(TdApi.GetChat(chatId)) { chatObj ->
+                        if (chatObj is TdApi.Chat) {
+                            saveTdChat(chatObj)
+                        }
+                    }
+                }
             }
         }
     }
