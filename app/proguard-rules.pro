@@ -7,7 +7,6 @@
 -allowaccessmodification
 -mergeinterfacesaggressively
 -overloadaggressively
--repackageclasses ''
 
 # 2. Strip Logging & Debug Overhead
 -assumenosideeffects class android.util.Log {
@@ -44,9 +43,10 @@
     volatile <fields>;
 }
 -dontwarn kotlinx.coroutines.**
--keepclassmembernames class kotlinx.coroutines.internal.MainDispatcherLoader {
-    private static java.lang.Object loadMainDispatcher();
-}
+-keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
+-keepnames class kotlinx.coroutines.android.AndroidDispatcherFactory {}
+-keep class kotlinx.coroutines.android.** { *; }
+-keep class kotlinx.coroutines.internal.MainDispatcherLoader { *; }
 
 # 7. Jetpack Compose
 -keepclassmembers class androidx.compose.runtime.Recomposer {
@@ -66,3 +66,7 @@
 -keep class com.example.engine.** { *; }
 -keep class com.example.ui.MainViewModel { *; }
 -keep class com.example.data.repository.** { *; }
+
+# 10. TDLib (Telegram Database Library) JNI & Data Types
+-keep class org.drinkless.tdlib.** { *; }
+-dontwarn org.drinkless.tdlib.**
