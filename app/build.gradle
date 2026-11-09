@@ -1,0 +1,86 @@
+import com.android.build.api.variant.FilterConfiguration
+
+plugins {
+    id 'com.android.application'
+    id 'org.telegram.build-app-plugin'
+    id 'com.google.gms.google-services'
+}
+
+dependencies {
+    implementation project(':TMessagesProj')
+    implementation 'androidx.profileinstaller:profileinstaller:1.4.1'
+}
+
+android {
+    defaultConfig.applicationId = "com.rcuenca.kronogram"
+
+    packagingOptions {
+        resources {
+            excludes += '**'
+        }
+        jniLibs {
+            useLegacyPackaging = true
+            pickFirsts += ['**/*.so']
+        }
+    }
+
+    androidResources {
+        noCompress += "pack"
+    }
+
+    signingConfigs {
+        debug {
+            storeFile file("${rootDir}/debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
+        release {
+            minifyEnabled false
+            shrinkResources false
+            signingConfig signingConfigs.debug
+            proguardFiles '../TMessagesProj/proguard-rules.pro'
+        }
+    }
+
+    defaultConfig.versionCode = Integer.parseInt(APP_VERSION_CODE)
+
+    defaultConfig {
+        versionName APP_VERSION_NAME
+        multiDexEnabled true
+        manifestPlaceholders = [MAPS_API_KEY: ""]
+    }
+
+    splits.abi {
+        var buildingBundle = gradle.startParameter.taskNames.any { it.startsWith("bundle") }
+        enable !buildingBundle
+        universalApk false
+        reset()
+        include "arm64-v8a"
+    }
+
+    namespace 'org.telegram.messenger.regular'
+
+    dependenciesInfo {
+        includeInApk false
+        includeInBundle false
+    }
+}
+
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.outputs.each { output ->
+            def abi = output.filters.find { it.filterType == FilterConfiguration.FilterType.ABI }?.identifier
+            def abiName = abi ?: "universal"
+            def baseVersionCode = output.versionCode.get()
+            output.outputFileName.set("KronoGram-${output.versionName.get()}-${baseVersionCode}-${abiName}.apk")
+            output.versionCode.set(baseVersionCode * 10)
+        }
+    }
+}

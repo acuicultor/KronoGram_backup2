@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "235395896161",
+    "project_id": "kronogram-64220",
+    "storage_bucket": "kronogram-64220.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:235395896161:android:3f7444ba1c625567fc6b20",
+        "android_client_info": {
+          "package_name": "com.rcuenca.kronogram"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqvzA54T7iefipNCDtJnI2-MqQFBjXABk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,56 @@
+plugins {
+    id 'com.android.application' version '9.1.1' apply false
+    id 'com.android.test' version '9.1.1' apply false
+    id 'androidx.baselineprofile' version '1.5.0' apply false
+    id 'com.google.gms.google-services' version '4.5.0' apply false
+}
+
+subprojects {
+    afterEvaluate {
+        file("${buildDir}/intermediates/aar_metadata_check/debug/checkDebugAarMetadata").mkdirs()
+        file("${buildDir}/intermediates/aar_metadata_check/release/checkReleaseAarMetadata").mkdirs()
+        if (plugins.hasPlugin("com.android.library") ||
+                plugins.hasPlugin("com.android.application")) {
+            android {
+                compileSdkVersion 36
+                buildToolsVersion "36.0.0"
+
+                lint {
+                    checkReleaseBuilds false
+                    disable 'MissingTranslation', 'ExtraTranslation', 'BlockedPrivateApi'
+                }
+
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_21
+                    targetCompatibility JavaVersion.VERSION_21
+
+                    coreLibraryDesugaringEnabled true
+                }
+
+                defaultConfig {
+                    minSdkVersion 24
+                    targetSdkVersion 36
+                }
+
+                buildTypes {
+                    play {
+                        initWith release
+                        matchingFallbacks = ['release']
+                    }
+                }
+
+                buildFeatures.buildConfig = true
+            }
+
+            dependencies {
+                coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs_nio:2.1.5'
+            }
+
+            if (project.name != "jlatexmath") {
+                tasks.matching { it.name.startsWith("check") && it.name.endsWith("AarMetadata") }.configureEach {
+                    enabled = false
+                }
+            }
+        }
+    }
+}

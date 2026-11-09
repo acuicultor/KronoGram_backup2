@@ -1,24 +1,60 @@
-*.iml
-.gradle
-.kotlin
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+# Built application files
+*.apk
+*.aar
+*.ap_
+*.aab
+*.zip
+assets/*.apk
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated and build files (recursive)
+build/
+**/build/
+**/intermediates/
+**/tmp/
+**/generated/
+.build-outputs/
+temp_neko/
+
+# Gradle files
+.gradle/
+**/.gradle/
+buildOutput.txt
+
+# Local configuration file (sdk path, etc)
 local.properties
-.env
-debug.keystore
 
-# Explicitly track assets directory and binaries for GitHub
-!assets/
-!assets/*.apk
-!assets/*.zip
+# Log Files
+*.log
 
+# IntelliJ IDEA & Android Studio
+*.iml
+.idea/
+**/.idea/
+captures/
+.navigation/
+
+# External native build folder
+.externalNativeBuild
+**/.externalNativeBuild
+.cxx/
+**/.cxx/
+
+# Google Services
+google-services.json
+!app/google-services.json
+!TMessagesProj/google-services.json
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

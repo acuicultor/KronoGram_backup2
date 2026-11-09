@@ -1,6 +1,6 @@
 {
-  "summary": "Plan exhaustivo de corrección y perfeccionamiento integral de KronoGram: sustitución de la imagen de marca oficial enviada por el usuario en toda la app y en los iconos del sistema, flujo de autenticación telefónica interactivo en dos pasos (teléfono + código de 5 dígitos + 2FA), pantallas dedicadas y completas para los 6 ajustes nativos de Telegram, tema Día clásico de Telegram con selector de 3 vías (Día, Noche, AMOLED), y corrección completa de textos cortados, márgenes y scroll de barra lateral.",
-  "updatedAt": "2026-11-06T16:48:44.320423512Z",
-  "requestFeedback": true,
-  "userFacing": true
+  "summary":  "Diagnóstico exacto de por qué la pantalla de sincronización con GitHub se queda en 'Loading file differences' infinitamente (75.000 archivos y 1.5 GB en carpetas build/), y plan para limpiarlas y blindar .gitignore con patrones recursivos para que la sincronización cargue en segundos.",
+  "updatedAt":  "2026-11-09T13:13:29.417765458Z",
+  "requestFeedback":  true,
+  "userFacing":  true
 }
