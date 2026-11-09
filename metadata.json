@@ -1,6 +1,6 @@
 {
   "name": "KronoGram",
-  "description": "KronoGram - Cliente de mensajería instantánea de alta velocidad basado en Telegram MTProto con diseño Cyber Chrono",
+  "description": "Telegram Fork",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

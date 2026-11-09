@@ -3,6 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:installLocation="auto">
 
-    <application android:name="org.telegram.messenger.ApplicationLoaderImpl" tools:replace="name">
+    <application
+        android:name="org.telegram.messenger.ApplicationLoaderImpl"
+        android:label="@string/app_name"
+        tools:replace="android:name,android:label">
     </application>
 </manifest>
